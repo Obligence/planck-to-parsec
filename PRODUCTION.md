@@ -22,12 +22,21 @@ If any step fails in a way you cannot fix, stop, tell Reza what failed, and do n
 
 ## 2. Choosing the three suggestions
 
+Start from the news, then fill with timeless facts.
+
 - Read `log.md` first and never repeat a topic already covered.
 - Subjects: particle physics, black holes, quantum mechanics and quantum field theory, relativity, Bell's theorem,
   dark matter and dark energy, gravitational waves, the LHC, cosmology, neutrinos, the early universe.
-- Each suggestion: a working title, the one fact in a sentence, and why it is exciting. Make the three different in subject.
+- Search the web for news from roughly the past few weeks: the latest Nobel Prize in Physics and the research
+  behind it, CERN and LHC results, LIGO-Virgo-KAGRA detections, JWST, Euclid, DESI and other surveys, neutrino and
+  dark matter experiments, notable new papers. Pull out the astonishing, simple fact inside the story.
+- Aim for at least two of the three options to come from recent news when the news is strong enough.
+- Confirm each news item in at least two reliable sources (the experiment or institution, a journal, an established
+  science outlet). No rumours or unconfirmed hype; say clearly when a result is preliminary.
+- Each suggestion: a working title, the one fact in a sentence, and for news items the hook with its date and source.
+  Make the three different in subject.
 - Prefer facts that can be *shown* (scale comparisons, motion, counts) over facts that need a derivation.
-- Occasionally include a recent result, after checking that it is real and current.
+- Videos about people's work show the physics, never a real person's face or voice.
 
 ## 3. The scene script
 
