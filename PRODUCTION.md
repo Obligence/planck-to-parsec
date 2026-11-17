@@ -5,15 +5,18 @@ One video = one astonishing, true, simple physics fact, animated, 45 to 75 secon
 
 ## 1. Daily flow
 
-1. **Suggest three topics** (see section 2). Send them to Reza and wait for his pick. His pick is the confirmation
-   to create and upload that video. No pick, no video: never choose for him and never upload anything he did not pick.
+1. **Suggest three topics** (see section 2). Send them to Reza and wait for his pick. No pick, no video: never choose for him.
 2. **Fact-check** the picked topic with web search against primary sources (experiment collaborations, NASA/ESA/CERN,
    journals, university pages). Every number in the video needs a source. Drop or reword anything you cannot verify.
 3. **Write** the scene script `shorts/<slug>.py` and narration `scripts/<slug>.json` (sections 3 and 4).
 4. **Draft render** with `--draft`, look at one frame per caption, fix overlaps and clipped text (section 5).
 5. **Full render** (4K, 60 fps) with `template/build.py`.
-6. **Commit and push** to `main`, then **upload through Zapier** and set the cover (section 6).
-7. **Log it** in `log.md` (date, topic, slug, YouTube link) and push. Send Reza the link and the video file.
+6. **Preview**: send Reza the MP4 and the cover with the proposed title, description, tags and sources, and wait.
+   Do not push the video or upload before he approves. If he asks for changes, rebuild and send a new preview.
+7. **After his explicit approval only**: commit and push to `main`, then upload through Zapier and set the cover (section 6).
+8. **Log it** in `log.md` (date, topic, slug, YouTube link) and push. Send Reza the link.
+
+There are two approvals every day: the topic, then the finished video. Nothing is published without the second.
 
 If any step fails in a way you cannot fix, stop, tell Reza what failed, and do not upload a broken or unverified video.
 
@@ -84,5 +87,5 @@ Push first; Zapier fetches files from
    `video_id` and `thumbnail` = raw URL of `covers/<slug>.jpg`. Success shows a `shortsAspectRatio` entry.
 3. Report the `play_url` to Reza.
 
-Always inspect the action with `inspect_zapier_actions` before executing. Upload exactly one video per day, only the
-picked topic, and never change or delete other videos on the channel unless Reza asks.
+Always inspect the action with `inspect_zapier_actions` before executing. Upload exactly one video per day, only after Reza
+approved its preview, and never change or delete other videos on the channel unless Reza asks.
