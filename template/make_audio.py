@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Soundtrack for a short: original synth background music + narration lines.
 
-Usage: python3 make_audio.py <knots.json> <narration_dir> <out.wav> [boom_time_s]
+Usage: python3 make_audio.py <knots.json> <narration_dir> <out.wav> [boom_time_s] [mood]
+mood: (none) = pulse-driven, "calm" = slow and spacious, "organ" = slow organ chords that swell (house style)
 knots.json holds "new" (video timeline), "starts" (when each narration line begins).
 narration_dir holds line_00.wav, line_01.wav, ... (any sample rate, mono).
 The music is generated here from sine waves, so there is nothing to license.
@@ -12,7 +13,9 @@ from scipy.signal import resample_poly, butter, lfilter
 SR = 44100
 kn = json.load(open(sys.argv[1])); ndir = sys.argv[2]; outp = sys.argv[3]
 boom_t = float(sys.argv[4]) if len(sys.argv) > 4 else None
-CALM = len(sys.argv) > 5 and sys.argv[5] == "calm"   # slower chords, quieter pulse, more echo
+MOOD = sys.argv[5] if len(sys.argv) > 5 else ""
+ORGAN = MOOD == "organ"
+CALM = MOOD in ("calm", "organ")   # slower chords, quieter pulse, more echo
 DUR = kn["new"][-1]; N = int(DUR * SR); t = np.arange(N) / SR
 rng = np.random.default_rng(1)
 
@@ -27,6 +30,9 @@ def env(t0, t1, a=1.2, r=1.6):
 
 # --- pad: slow chords (D minor, B flat, F, C), ~7 s each ---
 CHORDS = [(50, 53, 57, 62), (46, 50, 53, 58), (53, 57, 60, 65), (48, 52, 55, 60)]
+if ORGAN:   # D minor, B flat, G minor, A
+    CHORDS = [(50, 57, 62, 65), (46, 53, 58, 62), (43, 50, 55, 58), (45, 52, 57, 61)]
+HARM = ((1, 1.0), (2, 0.6), (3, 0.35), (4, 0.25), (6, 0.12), (8, 0.07)) if ORGAN else ((1, 1.0), (2, 0.25))
 CL = 10.0 if CALM else 7.0
 L = np.zeros(N); R = np.zeros(N)
 i = 0
@@ -35,7 +41,7 @@ while i * CL < DUR:
     for m in ch:
         f = note(m)
         for det, pan in ((-0.25, 0.3), (0.25, 0.7)):
-            w = np.sin(2 * np.pi * (f + det) * t + rng.uniform(0, 6.28)) + 0.25 * np.sin(2 * np.pi * 2 * (f + det) * t)
+            w = sum(a_ * np.sin(2 * np.pi * h_ * (f + det) * t + rng.uniform(0, 6.28)) for h_, a_ in HARM)
             L += w * e * (1 - pan) * 0.12; R += w * e * pan * 0.12
     sub = np.sin(2 * np.pi * note(ch[0] - 12) * t) * e * 0.22
     L += sub; R += sub
@@ -71,7 +77,11 @@ if boom_t is not None:
     L[r1:n1] += boom + crack; R[r1:n1] += boom + crack
 
 music = np.stack([L, R], 1)
-music *= 0.30 / np.max(np.abs(music))
+if ORGAN:   # swell toward the key moment, settle, then build to the close
+    bt = boom_t if boom_t is not None else DUR * 0.2
+    arc = np.interp(t, [0, bt, bt + 6, DUR - 3, DUR], [0.55, 1.0, 0.6, 1.0, 1.0])
+    music *= arc[:, None]
+music *= (0.20 if ORGAN else 0.30) / np.max(np.abs(music))
 music *= (np.clip(t / 1.0, 0, 1) * np.clip((DUR - t) / 2.0, 0, 1))[:, None]
 
 # --- narration, with the music ducked underneath it ---

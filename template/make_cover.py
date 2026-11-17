@@ -7,7 +7,7 @@ from PIL import ImageDraw, ImageFont
 mod = importlib.import_module(sys.argv[1]); T = float(sys.argv[2]); out = sys.argv[3]
 lines = sys.argv[4].split("|"); footer = sys.argv[5] if len(sys.argv) > 5 else ""
 mod.CAPTIONS = []
-img = mod.frame(T); d = ImageDraw.Draw(img)
+img = mod.frame(T).resize((1080, 1920)); d = ImageDraw.Draw(img)
 POP = "/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf"
 size = 128
 while max(ImageFont.truetype(POP, size).getlength(l.replace("*", "")) for l in lines) > 960: size -= 4
