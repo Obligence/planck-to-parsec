@@ -1,3 +1,5 @@
 # Topics covered
 
-- 2026-11-17: LIGO first detection (GW150914) - videos/2026-11-17-ligo-first-detection-4k.mp4
+| Date | Topic | Slug | YouTube |
+|---|---|---|---|
+| 2026-11-17 | LIGO's first detection of gravitational waves (GW150914): a stretch of 1/1000 of a proton's width | ligo_first_detection | https://www.youtube.com/watch?v=chwzT2DQlgM |

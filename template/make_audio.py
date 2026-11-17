@@ -12,7 +12,7 @@ from scipy.signal import resample_poly, butter, lfilter
 
 SR = 44100
 kn = json.load(open(sys.argv[1])); ndir = sys.argv[2]; outp = sys.argv[3]
-boom_t = float(sys.argv[4]) if len(sys.argv) > 4 else None
+boom_t = float(sys.argv[4]) if len(sys.argv) > 4 and float(sys.argv[4]) >= 0 else None
 MOOD = sys.argv[5] if len(sys.argv) > 5 else ""
 ORGAN = MOOD == "organ"
 CALM = MOOD in ("calm", "organ")   # slower chords, quieter pulse, more echo
