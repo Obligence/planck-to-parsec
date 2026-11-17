@@ -33,10 +33,32 @@ Start from the news, then fill with timeless facts.
 - Aim for at least two of the three options to come from recent news when the news is strong enough.
 - Confirm each news item in at least two reliable sources (the experiment or institution, a journal, an established
   science outlet). No rumours or unconfirmed hype; say clearly when a result is preliminary.
-- Each suggestion: a working title, the one fact in a sentence, and for news items the hook with its date and source.
+- Each suggestion: an exciting title (rules below), the one fact in a sentence, the opening line of the video,
+  and for news items the news hook with its date and source.
   Make the three different in subject.
 - Prefer facts that can be *shown* (scale comparisons, motion, counts) over facts that need a derivation.
 - Videos about people's work show the physics, never a real person's face or voice.
+
+## Titles and the opening hook
+
+**Title.** The title is half of whether anyone watches. Write five candidates and keep the best.
+- Under 70 characters, with the surprising part in the first few words.
+- Build it on a concrete contrast, number or question: "A teaspoon of this star outweighs a mountain",
+  "100 trillion ghosts pass through you every second", "Why your head is older than your feet".
+- Create curiosity, then keep the promise: the video must deliver exactly what the title claims.
+  No fake mysteries, no "scientists are shocked", no "you won't believe", no all-caps words.
+- For news topics, name what is new: "The 2026 Nobel Prize in one minute: ..." only if the video does that.
+
+**The first three seconds.** Viewers decide almost instantly whether to swipe away.
+- The first caption appears by 0.3 s and the first spoken line starts at once. No logo, no greeting, no
+  "did you know", no channel name, no scene-setting.
+- Open with the most astonishing claim in the video or a sharp question, in eight words or fewer on screen.
+  Start with the consequence, then explain: "Right now, 100 trillion particles are passing through you."
+- Something must already be moving in the first frame, and the picture should show the claim, not decorate it.
+- Leave a loop open that only the ending closes ("...and we only found out because of a tank of cleaning fluid"),
+  and make the last line pay it off. Keep the first spoken line under about four seconds.
+- Every following scene should raise a small new question or escalate the scale, so there is always a reason
+  to stay for the next ten seconds. Put the single biggest number or image near the end, not the middle.
 
 ## 3. The scene script
 
