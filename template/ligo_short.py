@@ -485,6 +485,21 @@ def main():
         else:
             sys.exit(1)
 
+    elif mode == "renderw":   # time-warped render: knots.json = {"new": [...], "orig": [...]}
+        import json
+        kn = json.load(open(sys.argv[2])); f0, f1, outp = int(sys.argv[3]), int(sys.argv[4]), sys.argv[5]
+        tmp = outp.replace(".mp4", ".part.mp4")
+        ff = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
+                               "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-crf", "18",
+                               "-preset", "veryfast", "-pix_fmt", "yuv420p", "-r", str(FPS), tmp],
+                              stdin=subprocess.PIPE)
+        for i in range(f0, f1):
+            ff.stdin.write(frame(float(np.interp(i / FPS, kn["new"], kn["orig"]))).tobytes())
+        ff.stdin.close()
+        if ff.wait() == 0:
+            os.replace(tmp, outp)
+        else:
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()
