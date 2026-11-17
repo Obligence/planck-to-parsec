@@ -22,18 +22,18 @@ WHITE, CYAN, GOLD, RED = (255, 255, 255), (110, 225, 255), (255, 196, 92), (255,
 GREY = (170, 180, 205)
 
 CAPTIONS = [  # start, end, kicker, text (*...* = highlighted, | = line break)
-    (0.3, 3.4, "1.3 BILLION YEARS AGO", "Two black holes were locked in a *death spiral.*"),
+    (0.3, 3.4, "1.3 BILLION YEARS AGO", "Two black holes began their *final dance.*"),
     (3.4, 6.3, None, "Each one about *30 times heavier* than our Sun."),
-    (6.7, 10.2, None, "They merged in a split second. | *3 Suns' worth of mass* became ripples in spacetime."),
-    (10.3, 14.0, None, "For an instant, it *out-powered every star* in the observable universe. Combined."),
-    (14.2, 17.6, "@countdown", "The ripples raced across space at the *speed of light...*"),
-    (17.6, 20.4, "SEPTEMBER 14, 2015", "...and finally *washed over Earth.*"),
-    (20.7, 24.0, "LIGO", "Waiting for them: two laser beams in tunnels *4 km long.*"),
+    (6.7, 10.2, None, "In a split second, they became one. | *3 Suns' worth of mass* became ripples in spacetime."),
+    (10.3, 14.0, None, "For one moment, it *out-powered every star* in the observable universe. Combined."),
+    (14.2, 17.6, "@countdown", "The ripples crossed the dark at the *speed of light...*"),
+    (17.6, 20.4, "SEPTEMBER 14, 2015", "...and washed over *a small blue world.*"),
+    (20.7, 24.0, "LIGO", "We were listening: two laser beams in tunnels *4 km long.*"),
     (24.0, 28.0, None, "The wave *stretched* one arm and *squeezed* the other..."),
     (28.2, 31.7, None, "...by *1/1000* the width of a proton."),
-    (31.7, 35.5, None, "Like measuring the distance to the nearest star to within a *hair's width.*"),
+    (31.7, 35.5, None, "Like measuring the distance to the nearest star to within a *human hair.*"),
     (35.6, 39.2, None, "The whole signal lasted *0.2 seconds.*"),
-    (39.2, 43.2, "EINSTEIN PREDICTED IT IN 1916", "A century later, *we finally caught one.*"),
+    (39.2, 43.2, "EINSTEIN PREDICTED IT IN 1916", "A century later, *we felt the universe tremble.*"),
 ]
 
 

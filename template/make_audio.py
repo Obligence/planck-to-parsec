@@ -12,6 +12,7 @@ from scipy.signal import resample_poly, butter, lfilter
 SR = 44100
 kn = json.load(open(sys.argv[1])); ndir = sys.argv[2]; outp = sys.argv[3]
 boom_t = float(sys.argv[4]) if len(sys.argv) > 4 else None
+CALM = len(sys.argv) > 5 and sys.argv[5] == "calm"   # slower chords, quieter pulse, more echo
 DUR = kn["new"][-1]; N = int(DUR * SR); t = np.arange(N) / SR
 rng = np.random.default_rng(1)
 
@@ -26,7 +27,7 @@ def env(t0, t1, a=1.2, r=1.6):
 
 # --- pad: slow chords (D minor, B flat, F, C), ~7 s each ---
 CHORDS = [(50, 53, 57, 62), (46, 50, 53, 58), (53, 57, 60, 65), (48, 52, 55, 60)]
-CL = 7.0
+CL = 10.0 if CALM else 7.0
 L = np.zeros(N); R = np.zeros(N)
 i = 0
 while i * CL < DUR:
@@ -48,13 +49,13 @@ while k * step < DUR - 1:
     m = ch[(k * 3) % 4] + 12 + (12 if k % 8 == 5 else 0)
     n0 = int(t0 * SR); n1 = min(N, n0 + int(0.9 * SR)); tt = np.arange(n1 - n0) / SR
     pl = np.sin(2 * np.pi * note(m) * tt) * np.exp(-tt / 0.16) * (0.055 if k % 2 == 0 else 0.035)
-    build = 0.5 + 0.5 * min(1.0, t0 / 12.0)          # the pulse grows in over the first seconds
+    build = (0.5 + 0.5 * min(1.0, t0 / 12.0)) * (0.3 if CALM else 1.0)          # the pulse grows in over the first seconds
     pan = 0.35 + 0.3 * ((k * 5) % 7) / 6
     L[n0:n1] += pl * (1 - pan) * build * 2; R[n0:n1] += pl * pan * build * 2
     k += 1
 
 # --- simple echo/reverb ---
-for d_s, g in ((0.31, 0.32), (0.47, 0.22), (0.73, 0.14)):
+for d_s, g in (((0.41, 0.42), (0.67, 0.32), (1.03, 0.24), (1.51, 0.15)) if CALM else ((0.31, 0.32), (0.47, 0.22), (0.73, 0.14))):
     d = int(d_s * SR)
     L[d:] += g * R[:-d]; R[d:] += g * L[:-d]
 
