@@ -22,13 +22,13 @@ WHITE, CYAN, GOLD, RED = (255, 255, 255), (110, 225, 255), (255, 196, 92), (255,
 GREY = (170, 180, 205)
 
 CAPTIONS = [  # start, end, kicker, text (*...* = highlighted, | = line break)
-    (0.3, 3.4, "1.3 BILLION YEARS AGO", "Two black holes began their *final dance.*"),
+    (0.3, 3.4, "1.3 BILLION YEARS AGO", "Two black holes were circling each other. *Faster and faster.*"),
     (3.4, 6.3, None, "Each one about *30 times heavier* than our Sun."),
-    (6.7, 10.2, None, "In a split second, they became one. | *3 Suns' worth of mass* became ripples in spacetime."),
+    (6.7, 10.2, None, "Then they collided. | *3 Suns' worth of mass* became ripples in spacetime."),
     (10.3, 14.0, None, "For one moment, it *out-powered every star* in the observable universe. Combined."),
     (14.2, 17.6, "@countdown", "The ripples crossed the dark at the *speed of light...*"),
-    (17.6, 20.4, "SEPTEMBER 14, 2015", "...and washed over *a small blue world.*"),
-    (20.7, 24.0, "LIGO", "We were listening: two laser beams in tunnels *4 km long.*"),
+    (17.6, 20.4, "SEPTEMBER 14, 2015", "...and finally reached *a small blue world.*"),
+    (20.7, 24.0, "LIGO", "This time, *someone was listening.* Two laser beams in tunnels 4 km long."),
     (24.0, 28.0, None, "The wave *stretched* one arm and *squeezed* the other..."),
     (28.2, 31.7, None, "...by *1/1000* the width of a proton."),
     (31.7, 35.5, None, "Like measuring the distance to the nearest star to within a *human hair.*"),
