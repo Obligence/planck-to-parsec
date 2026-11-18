@@ -72,7 +72,8 @@ Copy `shorts/ligo_first_detection.py` to `shorts/<slug>.py` (underscores, no hyp
   labels go through `texts.append((label_sprite(...), x, y, alpha))`. `win(T, a, b)` gives fade in/out.
 - Keep the helper code (Canvas, text sprites, background, `frame`) unchanged unless a scene truly needs more.
 
-Layout rules (layout units): captions occupy y 250 to 640; pictures live in y 650 to 1500; keep the bottom 400
+Layout rules (layout units): captions occupy y 250 to 640; pictures live in y 650 to 1400; the build burns
+subtitles into the band y 1430 to 1530, so keep pictures and labels out of it; keep everything below 1540
 and the right-hand 130 clear because the Shorts interface covers them. Palette: white text, gold highlights
 (255,196,92), cyan accents (110,225,255), dark navy starfield. One idea per scene.
 
@@ -81,12 +82,21 @@ Honesty rules: if motion or size is exaggerated, or a curve is schematic, label 
 
 ## 4. Narration
 
-`scripts/<slug>.json`: one entry per caption, `"text"` or `["text", speed_multiplier]` (0.92 to 1.06).
+`scripts/<slug>.json`: one entry per caption: `{"say": spoken text, "show": subtitle text, "speed": 0.92 to 1.06}`
+(`show` and `speed` are optional; a plain string also works).
+
+**Subtitles for silent viewing.** Many people watch Shorts without sound, so the build burns the full narration
+into the video as subtitles, a few words at a time, in step with the voice. They come from `show`, or from `say`
+when `show` is missing. Give `show` whenever the spoken spelling is not how it should read: digits and units
+("1916", "4 km", "1/1000", "0.2 seconds"), dates, and real names ("LIGO", not "Lie-go"). The video must be fully
+understandable with the sound off: check a draft frame per caption with that in mind.
 
 - Style: calm but alive. Short sentences, vivid verbs, a sense of wonder, no hype words. The caption is the
   condensed version of the spoken line.
 - Write numbers as words ("nineteen sixteen", "one thousandth"). Spell awkward names phonetically
-  (LIGO is written "Lie-go"). End the last line as a plain statement; the tool adds a gentle falling close.
+  (LIGO is written "Lie-go"). Years that can be misheard get help: say "in the year nineteen-sixteen", since
+  "sixteen" and "sixty" sound alike, and show the year on screen. End the last line as a plain statement; the tool
+  adds a gentle falling close.
 - Voice `am_michael`, base speed 0.95, music mood `organ` (original synthesized music; these are the defaults).
 - Never imitate a real person's voice and never use existing music, film scores, characters or footage.
 

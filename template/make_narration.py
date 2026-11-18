@@ -2,7 +2,8 @@
 """Narration lines with Kokoro TTS (pip install kokoro-onnx soundfile; model files from the
 kokoro-onnx GitHub release model-files-v1.0: kokoro-v1.0.onnx and voices-v1.0.bin).
 Usage: python3 make_narration.py <lines.json> <voice> <speed> <outdir> <model_dir>
-lines.json is a list, one entry per caption: "text" or ["text", speed_multiplier].
+lines.json is a list, one entry per caption: "text", ["text", speed_multiplier] or
+{"say": spoken text, "show": subtitle text, "speed": multiplier}.
 The last line gets a gentle falling, slowing ending so the video closes on a settled tone.
 Writes line_NN.wav and durs.json."""
 import sys, json, numpy as np, soundfile as sf
@@ -11,7 +12,10 @@ lines = json.load(open(sys.argv[1])); voice = sys.argv[2]; speed = float(sys.arg
 k = Kokoro(f"{md}/kokoro-v1.0.onnx", f"{md}/voices-v1.0.bin")
 durs = []
 for i, t in enumerate(lines):
-    t, mult = (t, 1.0) if isinstance(t, str) else (t[0], float(t[1]))
+    if isinstance(t, dict):
+        t, mult = t["say"], float(t.get("speed", 1.0))
+    else:
+        t, mult = (t, 1.0) if isinstance(t, str) else (t[0], float(t[1]))
     s, sr = k.create(t, voice=voice, speed=speed * mult, lang="en-gb" if voice.startswith("b") else "en-us")
     idx = np.where(np.abs(s) > 0.01)[0]; s = s[max(0, idx[0] - 800): idx[-1] + 2400]
     if i == len(lines) - 1:   # closing cadence: pitch and pace glide down over the final 1.4 s

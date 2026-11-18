@@ -5,7 +5,9 @@
       --impact 6.2 --cover-time 7.25 --cover-text "THE *TINIEST*|MEASUREMENT|EVER MADE" --cover-footer "LIGO · 2015"
 
 The scene script must define CAPTIONS (start, end, kicker, text), DUR and frame(T) like template/ligo_short.py.
-The JSON holds one narration line per caption: "text" or ["text", speed_multiplier].
+The JSON holds one narration line per caption: "text", ["text", speed_multiplier], or
+{"say": spoken text, "show": subtitle text, "speed": multiplier}. Subtitles of the full narration are burned in
+automatically for viewers watching without sound.
 Each scene is stretched to fit its spoken line, so write scene timings for the pictures and let the voice set the pace.
 Outputs: videos/<slug>.mp4 (4K, 60 fps, narration + original music) and covers/<slug>.jpg.
 Add --draft for a fast 1080p/30 check render (written to build/<slug>/draft.mp4, not to videos/).
@@ -23,15 +25,62 @@ def load(path):
     return importlib.import_module(os.path.splitext(os.path.basename(path))[0])
 
 
+SUB_FONT = "/usr/share/fonts/truetype/google-fonts/Poppins-SemiBold.ttf"
+if not os.path.exists(SUB_FONT):
+    SUB_FONT = "/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf"
+
+
+def entry(e):
+    """A narration entry -> (spoken text, speed multiplier, subtitle text)."""
+    if isinstance(e, dict):
+        return e["say"], float(e.get("speed", 1.0)), e.get("show", e["say"])
+    if isinstance(e, str):
+        return e, 1.0, e
+    return e[0], float(e[1]), e[0]
+
+
+def subtitle_schedule(kn, maxc=30):
+    """Split each line's subtitle text into short chunks timed across that line's audio."""
+    sched = []
+    for s0, d, text in zip(kn["starts"], kn["durs"], kn["subs"]):
+        chunks, cur = [], ""
+        for w in text.split():
+            if cur and len(cur) + 1 + len(w) > maxc:
+                chunks.append(cur); cur = w
+            else:
+                cur = (cur + " " + w).strip()
+        if cur:
+            chunks.append(cur)
+        tot = sum(len(c) + 2 for c in chunks); t = s0
+        for c in chunks:
+            dt = d * (len(c) + 2) / tot; sched.append((t, t + dt, c)); t += dt
+    return sched
+
+
+def draw_subtitle(img, text, S):
+    """Burned-in subtitle for viewers watching without sound (layout y ~1480, above the Shorts interface)."""
+    from PIL import ImageDraw, ImageFont
+    f = ImageFont.truetype(SUB_FONT, 46 * S); d = ImageDraw.Draw(img, "RGBA")
+    w = f.getlength(text); cx, cy = 540 * S, 1480 * S; px, py, h = 26 * S, 14 * S, 46 * S
+    d.rounded_rectangle([cx - w / 2 - px, cy - h / 2 - py, cx + w / 2 + px, cy + h / 2 + py + 4 * S], radius=18 * S, fill=(0, 0, 0, 170))
+    d.text((cx, cy), text, font=f, fill=(255, 255, 255), anchor="mm")
+
+
 def worker(path, knots, f0, f1, out):
     import numpy as np
     mod = load(path); kn = json.load(open(knots)); tmp = out.replace(".mp4", ".part.mp4")
+    sched = subtitle_schedule(kn) if kn.get("subs") else []
     ff = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
                            "-s", f"{mod.W * mod.S}x{mod.H * mod.S}", "-r", str(mod.FPS), "-i", "-", "-c:v", "libx264",
                            "-crf", "20", "-preset", "veryfast", "-pix_fmt", "yuv420p", "-r", str(mod.FPS), tmp],
                           stdin=subprocess.PIPE)
     for i in range(f0, f1):
-        ff.stdin.write(mod.frame(float(np.interp(i / mod.FPS, kn["new"], kn["orig"]))).tobytes())
+        t = i / mod.FPS
+        img = mod.frame(float(np.interp(t, kn["new"], kn["orig"])))
+        for a, b_, c in sched:
+            if a <= t < b_:
+                draw_subtitle(img, c, mod.S); break
+        ff.stdin.write(img.tobytes())
     ff.stdin.close()
     if ff.wait() != 0:
         sys.exit(1)
@@ -73,7 +122,8 @@ def main():
     for i, d in enumerate(durs):
         n = max(d + 0.9, 0.85 * (K[i + 1] - K[i])) + (1.3 if i == len(durs) - 1 else 0)
         starts.append(round(new[-1] + 0.35, 3)); new.append(round(new[-1] + n, 3))
-    json.dump({"new": new, "orig": K, "starts": starts, "durs": durs}, open(f"{work}/knots.json", "w"))
+    json.dump({"new": new, "orig": K, "starts": starts, "durs": durs, "subs": [entry(e)[2] for e in lines]},
+              open(f"{work}/knots.json", "w"))
     total = int(new[-1] * mod.FPS); half = total // 2
     print(f"length {new[-1]:.1f}s, {total} frames at {mod.W * mod.S}x{mod.H * mod.S}", flush=True)
     procs = [subprocess.Popen([sys.executable, __file__, "--worker", scene, f"{work}/knots.json", str(f0), str(f1), f"{work}/{n}.mp4"])
