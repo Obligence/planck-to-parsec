@@ -6,8 +6,8 @@
 
 The scene script must define CAPTIONS (start, end, kicker, text), DUR and frame(T) like template/ligo_short.py.
 The JSON holds one narration line per caption: "text", ["text", speed_multiplier], or
-{"say": spoken text, "show": subtitle text, "speed": multiplier}. Subtitles of the full narration are burned in
-automatically for viewers watching without sound.
+{"say": spoken text, "speed": multiplier}. No subtitles are burned in by default (Reza does not want them);
+--subtitles turns them on, using each entry's optional "show" text.
 Each scene is stretched to fit its spoken line, so write scene timings for the pictures and let the voice set the pace.
 Outputs: videos/<slug>.mp4 (4K, 60 fps, narration + original music) and covers/<slug>.jpg.
 Add --draft for a fast 1080p/30 check render (written to build/<slug>/draft.mp4, not to videos/).
@@ -101,6 +101,7 @@ def main():
     ap.add_argument("--mood", default="organ"); ap.add_argument("--impact", type=float)
     ap.add_argument("--cover-time", type=float); ap.add_argument("--cover-text"); ap.add_argument("--cover-footer", default="")
     ap.add_argument("--draft", action="store_true")
+    ap.add_argument("--subtitles", action="store_true", help="burn the narration in as subtitles (off by default)")
     a = ap.parse_args()
     if a.draft:
         os.environ["PS_SCALE"], os.environ["PS_FPS"] = "1", "30"
@@ -122,7 +123,7 @@ def main():
     for i, d in enumerate(durs):
         n = max(d + 0.9, 0.85 * (K[i + 1] - K[i])) + (1.3 if i == len(durs) - 1 else 0)
         starts.append(round(new[-1] + 0.35, 3)); new.append(round(new[-1] + n, 3))
-    json.dump({"new": new, "orig": K, "starts": starts, "durs": durs, "subs": [entry(e)[2] for e in lines]},
+    json.dump({"new": new, "orig": K, "starts": starts, "durs": durs, "subs": [entry(e)[2] for e in lines] if a.subtitles else []},
               open(f"{work}/knots.json", "w"))
     total = int(new[-1] * mod.FPS); half = total // 2
     print(f"length {new[-1]:.1f}s, {total} frames at {mod.W * mod.S}x{mod.H * mod.S}", flush=True)
