@@ -118,5 +118,10 @@ Push first; Zapier fetches files from
    `video_id` and `thumbnail` = raw URL of `covers/<slug>.jpg`. Success shows a `shortsAspectRatio` entry.
 3. Report the `play_url` to Reza.
 
+Upload limit: Zapier allows about 5 YouTube uploads per day on free and trial plans. The error
+"This action has been throttled" means that limit was hit. Do not keep retrying: tell Reza, leave the
+files pushed, and upload on a later day. Every re-upload of a corrected video also counts, so get the
+preview approved before the first upload.
+
 Always inspect the action with `inspect_zapier_actions` before executing. Upload exactly one video per day, only after Reza
 approved its preview, and never change or delete other videos on the channel unless Reza asks.
