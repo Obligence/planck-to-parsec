@@ -122,7 +122,11 @@ Push first; Zapier fetches files from
    `category_id` "28", `made_for_kids` false. Do not pass the thumbnail here; it is ignored for Shorts.
 2. Wait about three minutes, then `upload_video_thumbnail` (tool_name `youtube_update_video_thumbnail`) with
    `video_id` and `thumbnail` = raw URL of `covers/<slug>.jpg`. Success shows a `shortsAspectRatio` entry.
-3. Report the `play_url` to Reza.
+3. Report the `play_url` to Reza, and say in the same message that the cover is set.
+
+**The cover is mandatory.** Every upload is followed by the thumbnail action in the same run; an upload without its
+cover is not finished. If the thumbnail action fails, retry it once after another minute, and if it still fails tell
+Reza plainly that the video is live without its cover.
 
 Upload limit: Zapier allows about 5 YouTube uploads per day on free and trial plans. The error
 "This action has been throttled" means that limit was hit. Do not keep retrying: tell Reza, leave the
