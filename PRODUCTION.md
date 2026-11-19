@@ -93,13 +93,17 @@ not draw a running transcript on screen. The large captions at the top are the o
   (LIGO is written "Lie-go"). Years that can be misheard get help: say "in the year nineteen-sixteen", since
   "sixteen" and "sixty" sound alike, and show the year on screen. End the last line as a plain statement; the tool
   adds a gentle falling close.
+- Stops and questions: `[0.7]` inside a line makes a deliberate stop of that many seconds, and the phrase after it is
+  voiced on its own with a fresh intonation ("...be duplicated? [0.8] ~Nobody knows. [0.6] It is one of..."). A phrase
+  starting with `~` is weighted (slightly slower and lower): use it for payoff phrases. A phrase ending in `?` gets a
+  rising, questioning ending automatically; put a stop before or after a question so it is voiced as its own phrase.
 - Voice `am_michael`, base speed 0.95, music mood `organ` (original synthesized music; these are the defaults).
 - Never imitate a real person's voice and never use existing music, film scores, characters or footage.
 
 ## 5. Build and check
 
 ```
-pip install --break-system-packages kokoro-onnx soundfile aggdraw scipy pillow numpy
+pip install --break-system-packages kokoro-onnx soundfile aggdraw scipy pillow numpy pyworld
 python3 template/build.py shorts/<slug>.py scripts/<slug>.json <slug> --draft \
     --impact <picture-time of the big moment> 
 # look at frames: ffmpeg -ss <t> -i build/<slug>/draft.mp4 -frames:v 1 f.jpg  (one per caption)

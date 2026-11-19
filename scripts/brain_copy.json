@@ -1,0 +1,9 @@
+[{"say": "A machine copies your brain. Every atom. [0.6] Which one is you?", "speed": 1.02},
+ {"say": "The copy wakes up with all your memories. [0.55] ~It is certain it is you.", "speed": 1.03},
+ {"say": "But you are still standing right there. [0.6] ~Nothing changed.", "speed": 1.02},
+ {"say": "Is consciousness just a pattern that can be duplicated? [0.8] ~Nobody knows. [0.6] It is one of the deepest open questions in science.", "speed": 1.05},
+ {"say": "But physics has a surprise. [0.65] ~A perfect copy is impossible.", "speed": 1.0},
+ {"say": "It is called the no-cloning theorem. Proven in the year nineteen eighty-two. [0.65] ~An unknown quantum state can never be copied exactly.", "speed": 1.05},
+ {"say": "Nature allows one thing instead. Physicists have teleported the states of single particles. [0.7] ~But only by destroying the original.", "speed": 1.05},
+ {"say": "So at the deepest level, no copy of you could ever be exact.", "speed": 1.0},
+ {"say": "Whether your mind needs that level of detail is still a mystery. [0.75] For now, the universe keeps you one of a kind.", "speed": 0.98}]
