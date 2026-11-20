@@ -1,7 +1,7 @@
 # Planck to Parsec: daily production guide
 
 This is the working procedure for the daily short. Channel: **Planck to Parsec** on YouTube (owner: Reza).
-One video = one astonishing, true, simple physics fact, animated, 45 to 75 seconds, vertical.
+One video = one astonishing, true, simple physics fact, animated, 35 to 50 seconds, vertical (see "Length and the final third").
 
 ## 1. Daily flow
 
@@ -60,12 +60,23 @@ Start from the news, then fill with timeless facts.
 - Every following scene should raise a small new question or escalate the scale, so there is always a reason
   to stay for the next ten seconds. Put the single biggest number or image near the end, not the middle.
 
+**Length and the final third.** (From YouTube's early analytics on the Sun tunnelling short, 2026-11-20: 67% stayed
+to watch, but average view was 41 s of a 66 s video, with the drop-off put at the move from the main reveal to a
+secondary fact.)
+- Aim for 35 to 50 seconds in the finished video: 6 to 8 captions, about 80 to 100 spoken words. Check the length
+  printed by the draft build and cut lines if it is over 50 s.
+- One idea only. After the main reveal, go straight to the closing payoff. No second fact, comparison or aside
+  after the reveal, however good; save it for its own video or for the pinned comment.
+- Corrections that accuracy needs stay in, but as a clause inside an existing line, not as an extra scene.
+- With every preview, propose one short open question for Reza to pin as the first comment (a spare fact from the
+  research works well, for example "Did you know your body makes more heat per litre than the Sun's core?").
+
 ## 3. The scene script
 
 Copy `shorts/ligo_first_detection.py` to `shorts/<slug>.py` (underscores, no hyphens) and replace the content:
 
 - `CAPTIONS`: list of `(start, end, kicker_or_None, text)`. `*word*` highlights in gold, `|` forces a line break,
-  use a non-breaking space inside units ("4 km"). 8 to 12 captions, each at most about 14 words.
+  use a non-breaking space inside units ("4 km"). 6 to 8 captions, each at most about 14 words.
 - `DUR`: end of the picture timeline. Scene timings are for the pictures only; the build stretches each caption's
   scene to fit its narration line.
 - Scene functions draw with `circ`, `line`, `rect` in 1080x1920 layout units (the canvas scales to 4K by itself);
