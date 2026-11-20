@@ -1,9 +1,9 @@
 [{"say": "The Sun is too cold to shine. [0.5] ~And yet, it does.", "speed": 1.0},
  {"say": "Its core is fifteen million degrees. [0.3] That sounds hot.", "speed": 1.03},
  {"say": "But to fuse, two protons have to touch. And protons push each other away, hard.", "speed": 1.04},
- {"say": "Forcing them together should take about ten billion degrees. [0.45] ~The Sun is hundreds of times too cold.", "speed": 1.04},
+ {"say": "By ordinary physics, forcing them together should take billions of degrees. [0.45] ~The Sun is hundreds of times too cold.", "speed": 1.04},
  {"say": "So how does it burn? [0.5] The protons cheat.", "speed": 1.0},
  {"say": "It is called quantum tunnelling. A particle is also a wave, [0.3] and a little of that wave leaks straight through the wall.", "speed": 1.04},
- {"say": "It almost never works. A single proton can wait a billion years for its turn.", "speed": 1.03},
- {"say": "That is why the Sun burns so slowly. Litre for litre, your body makes more heat than its core.", "speed": 1.05},
+ {"say": "And even then, it almost never works. [0.3] In that same instant, one proton must turn into a neutron.", "speed": 1.03},
+ {"say": "So an average proton waits nine billion years for its turn. [0.35] Litre for litre, your body makes more heat than the Sun's core.", "speed": 1.05},
  {"say": "But the Sun is enormous. [0.4] So every sunbeam you have ever felt [0.3] ~began with a particle walking through a wall.", "speed": 0.98}]

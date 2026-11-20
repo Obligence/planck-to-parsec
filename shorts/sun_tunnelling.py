@@ -30,11 +30,11 @@ CAPTIONS = [  # start, end, kicker, text (*...* = highlighted, | = line break)
     (0.0, 4.5, None, "The Sun is | *too cold to shine.*"),
     (4.5, 10.0, None, "Its core: *15 million* | degrees. Sounds hot."),
     (10.0, 16.0, None, "To fuse, protons | must touch. | But they *repel.*"),
-    (16.0, 22.0, None, "It should take | *10 billion degrees.* | The Sun is far too cold."),
+    (16.0, 22.0, None, "It should take | *billions of degrees.* | The Sun is far too cold."),
     (22.0, 28.0, None, "So how does it burn? | *The protons cheat.*"),
     (28.0, 35.0, "QUANTUM TUNNELLING", "A particle is a wave. | A little leaks | *through the wall.*"),
-    (35.0, 41.0, None, "It almost never works. | One proton can wait | *a billion years.*"),
-    (41.0, 46.0, None, "So the Sun burns slowly. | Your body makes | *more heat per litre.*"),
+    (35.0, 41.0, None, "Even then, it rarely works: | one proton must | *become a neutron.*"),
+    (41.0, 46.0, None, "Average wait: | *9 billion years.* | Your body out-heats its core."),
     (46.0, 54.0, None, "Every sunbeam began | with a particle | *walking through a wall.*"),
 ]
 
@@ -321,7 +321,7 @@ def scene_bars(img, d, T, texts):
     rect(d, 250, base - h, 430, base, fill=rgba(PROT, 0.92 * a))
     rect(d, 590, base - max(1.2, h * 15e6 / 1e10), 770, base, fill=rgba(GOLD, a))
     texts.append((label_sprite("needed", POP, 38, PROT), 340, top - 78, a * g))
-    texts.append((label_sprite("10 billion", POP, 46, WHITE), 340, top - 30, a * g))
+    texts.append((label_sprite("about 10 billion", POP, 46, WHITE), 340, top - 30, a * g))
     ga = a * ss((T - 17.6) / 0.5)
     texts.append((label_sprite("the Sun", POP, 38, GOLD), 680, base - 150, ga))
     texts.append((label_sprite("15 million", POP, 46, WHITE), 680, base - 102, ga))
@@ -425,12 +425,21 @@ def scene_wait(img, d, T, texts):
         proton(d, x, y, 13, 0.8 * a, plus=False)
         if abs(math.sin(math.pi * u)) < 0.12:
             circ(d, wx - 6, y, 16, fill=rgba(WHITE, 0.5 * a))
-    g = ss((T - 38.6) / 1.4)                                # ...until one is on the other side
+    NEUT = (150, 175, 225)
+    g = ss((T - 36.2) / 1.2)                                # one gets through and meets a proton on the other side...
+    w = ss((T - 38.3) / 0.5)                                # ...and in that instant one of the pair must become a neutron
+    px = lerp(wx + 40, 716, g)
+    proton(d, 792, 1040, 34, a * ss((T - 35.4) / 0.5), col=lerp3(PROT, NEUT, w), plus=w < 0.5)
     if g > 0:
-        proton(d, lerp(wx - 30, 800, g), 1040, 22, a * g, col=GOLD, plus=False)
-        circ(d, lerp(wx - 30, 800, g), 1040, 40 + 30 * math.sin(6 * T), outline=rgba(GOLD, 0.5 * a * g), width=3)
-    texts.append((label_sprite("1,000,000,000", POP, 84, GOLD), CX - 20, 1436, a * ss((T - 36.6) / 0.5)))
-    texts.append((label_sprite("years: a typical wait for one proton", size=30, fill=WHITE), CX - 20, 1496, a * ss((T - 36.6) / 0.5)))
+        proton(d, px, 1040, 34, a * g)
+    dt = T - 38.3
+    if dt > 0:
+        circ(d, 754, 1040, 50 + 330 * dt, outline=rgba(WHITE, 0.8 * math.exp(-dt / 0.4) * a), width=4)
+        circ(d, 754, 1040, 92 + 5 * math.sin(6 * T), outline=rgba(GOLD, 0.7 * a * w), width=4)
+    texts.append((label_sprite("proton", size=30, fill=PROT), 700, 960, a * g))
+    texts.append((label_sprite("neutron", size=30, fill=NEUT), 820, 1124, a * w))
+    texts.append((label_sprite("fused", POP, 40, GOLD), 754, 1200, a * ss((T - 39.0) / 0.4)))
+    texts.append((label_sprite("the weak force: extremely rare", POP, 38, WHITE), CX - 20, 1452, a * ss((T - 38.6) / 0.5)))
     texts.append((label_sprite("illustration", size=28, fill=GREY), 250, 665, a))
 
 
