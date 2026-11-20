@@ -1,9 +1,9 @@
-[{"say": "The Sun is too cold to shine. [0.5] ~And yet, it does.", "speed": 1.0},
- {"say": "Its core is fifteen million degrees. [0.3] That sounds hot.", "speed": 1.03},
- {"say": "But to fuse, two protons have to touch. And protons push each other away, hard.", "speed": 1.04},
- {"say": "By ordinary physics, forcing them together should take billions of degrees. [0.45] ~The Sun is hundreds of times too cold.", "speed": 1.04},
- {"say": "So how does it burn? [0.5] The protons cheat.", "speed": 1.0},
- {"say": "It is called quantum tunnelling. A particle is also a wave, [0.3] and a little of that wave leaks straight through the wall.", "speed": 1.04},
- {"say": "And even then, it almost never works. [0.3] In that same instant, one proton must turn into a neutron.", "speed": 1.03},
- {"say": "So an average proton waits nine billion years for its turn. [0.35] Litre for litre, your body makes more heat than the Sun's core.", "speed": 1.05},
- {"say": "But the Sun is enormous. [0.4] So every sunbeam you have ever felt [0.3] ~began with a particle walking through a wall.", "speed": 0.98}]
+["The Sun is too cold to shine... and yet, it does.",
+ "Its core is fifteen million degrees, which sounds hot.",
+ "But to fuse, two protons have to touch, and protons push each other away with enormous force.",
+ "By ordinary physics, forcing them together should take billions of degrees. The Sun is hundreds of times too cold.",
+ "So how does it burn? The protons cheat.",
+ "It's called quantum tunnelling. A particle is also a wave, and a little of that wave leaks straight through the wall.",
+ "Even then, it almost never works, because in that same instant, one proton has to turn into a neutron.",
+ "So an average proton waits nine billion years for its turn. Litre for litre, your body makes more heat than the Sun's core.",
+ "But the Sun is enormous. So every sunbeam you've ever felt began with a particle walking through a wall."]
