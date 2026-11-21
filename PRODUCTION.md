@@ -150,3 +150,21 @@ preview approved before the first upload.
 
 Always inspect the action with `inspect_zapier_actions` before executing. Upload exactly one video per day, only after Reza
 approved its preview, and never change or delete other videos on the channel unless Reza asks.
+
+## 7. Growth rules (apply to every Short)
+
+- **G1 First-second hook:** the first frame already moves and shows the most surprising claim or a sharp question, spoken from 0.0 s. No intro, logo or slow fade-in.
+- **G2 On-screen hook text:** one short line of large text (at most about 8 words) in the first frame, held 2 to 3 s. A title card, never the full narration as subtitles.
+- **G3 Looping ending:** the last spoken line flows back into the opening line when the Short replays; the final frame matches or leads into the first. Narrator tone settles down. (Parts 1 and 2 of a series end with a teaser instead, see S3.)
+- **G4 Caption file:** an English SRT `captions/<slug>.srt` timed to the narration audio, numbers and years as digits. Commit it with the scene script.
+- **G5 Series number:** the channel number N is the number of published rows in `log.md` plus 1. "Planck to Parsec #N" is the first line of the description and small text on the cover, not in the title.
+- **G6 Comment question:** one short, curious question for viewers, posted as the pinned comment and ending the description.
+- **G7 Description and tags:** the first two lines hold the main search terms; include sources; add 3 hashtags including #Shorts and #physics.
+
+## 8. Series rules (multi-part stories, one part per day)
+
+- **S1** A series is one story told in 3 Shorts on consecutive days. Each part is a complete Short built with all growth rules.
+- **S2** Each part has its own title followed by " (Part k/3)"; the cover shows "Part k/3". The series name appears in every description, and each description links the earlier parts.
+- **S3** Parts 1 and 2 end with a teaser for the next part instead of the loop. Part 3 pays off the story and may loop into part 1's opening.
+- **S4** In `log.md` mark parts in the topic column as "<series name> - Part k/3". A series is in progress if Part 1 or 2 is logged and Part 3 is not.
+- **S5** While a series is in progress, do not offer three new topics: send the plan for the next part (title, what it covers, opening line and hook text, ending line) and ask Reza for "go" or changes.
