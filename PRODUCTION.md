@@ -68,6 +68,13 @@ secondary fact.)
 - One idea only. After the main reveal, go straight to the closing payoff. No second fact, comparison or aside
   after the reveal, however good; save it for its own video or for the pinned comment.
 - Corrections that accuracy needs stay in, but as a clause inside an existing line, not as an extra scene.
+- **Reveal by 45 s, total 60 s at most** (analytics on "If Earth were a marble", 2026-11-22: 66.4% stayed to watch and it
+  beat the other recent Shorts on views, but the average view was 43 s of 74 s, about the same 41 to 43 s as the Sun
+  short, so the 230 km reveal at 56 to 67 s was missed by most viewers). Viewers leave at roughly 40 to 45 s whatever the
+  length, so put the single biggest reveal or number by about 45 s and keep the whole video to 60 s or less, even for a
+  multi-step scale story. For such a story, cut steps or split it into a series (see Series rules) rather than run long.
+- **Closing question on screen:** in the last 2 seconds show one short question for viewers (for example "What should we
+  scale down next?"), and use the same question as the pinned comment (G6). The narration may stay as it is.
 - With every preview, propose one short open question for Reza to pin as the first comment (a spare fact from the
   research works well, for example "Did you know your body makes more heat per litre than the Sun's core?").
 
