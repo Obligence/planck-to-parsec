@@ -223,8 +223,9 @@ V_1S = Z_GOLD / 137.036           # innermost electron speed / c, about 0.58
 SHRINK_1S = 0.22                  # the 1s orbit is about 22% smaller with relativity
 
 CX = 500                          # picture centre (the right-hand edge stays clear for the Shorts buttons)
-GOLD_M = ((120, 80, 14), (212, 160, 46), (250, 222, 130))       # dark, mid, highlight
-SILV_M = ((88, 93, 104), (165, 170, 181), (228, 231, 238))
+T_GOLD, T_SILV = np.array([1.00, 0.74, 0.30]), np.array([0.93, 0.94, 0.97])    # how each metal tints what it reflects
+GOLD_M = ((120, 80, 14), (212, 160, 46), (250, 222, 130))       # dark, mid, highlight (flat drawings)
+SILV_C = (225, 229, 238)
 BLUE = (80, 130, 255)
 
 
@@ -232,51 +233,103 @@ def lerp3(c0, c1, t):
     return (int(lerp(c0[0], c1[0], t)), int(lerp(c0[1], c1[1], t)), int(lerp(c0[2], c1[2], t)))
 
 
-def metal(m):
-    """m = 0 gold, 1 silver -> (dark, mid, highlight)."""
-    return tuple(lerp3(g, s, clamp(m)) for g, s in zip(GOLD_M, SILV_M))
+# ---------- polished metal: what a mirror-like surface with normal n shows of a simple "studio" of soft lights ----------
+def studio(nx, ny, nz, rot=0.0, strip=1.0):
+    """Brightness reflected towards the viewer (who looks along -z) by a mirror surface with unit normal (nx, ny, nz).
+    y points up here. The studio: a dim room, a big soft light above, a narrow strip light at the side, a dark floor."""
+    rx, ry, rz = 2 * nz * nx, 2 * nz * ny, 2 * nz * nz - 1          # reflection of the view direction
+    az = np.arctan2(rx, rz) + rot
+    b = 0.10 + 0.16 * (ry * 0.5 + 0.5)
+    b = b + 1.25 * np.exp(-((ry - 0.52) / 0.20) ** 2) * (0.55 + 0.45 * np.cos(1.3 * az))        # soft box above
+    b = b + 0.95 * strip * np.exp(-((np.sin(az + 1.1)) / 0.13) ** 2) * (np.cos(az + 1.1) > 0) * np.exp(-(ry / 0.75) ** 2)   # strip
+    b = b + 0.30 * np.exp(-((ry + 0.45) / 0.22) ** 2)                                           # warm bounce from the floor
+    b = b + 0.35 * (1 - np.abs(nz)) ** 3                                                        # brighter at grazing angles
+    return b
 
 
-def ring(d, cx, cy, R, T, a, m=0.0, tilt=0.42, w=46):
-    """A ring seen at an angle: a tube drawn as many thin ellipses, shaded across its thickness, with a moving glint."""
+def metal_rgb(b, tint):
+    """Brightness -> colour: tinted by the metal, with the brightest highlights going to white."""
+    base = np.clip(b, 0, 1)[..., None] * tint
+    hot = np.clip(b - 1.0, 0, 1)[..., None]
+    return np.clip(255 * (base + hot * (1 - base)), 0, 255)
+
+
+NU, NV = 200, 22
+_u = np.linspace(0, 2 * np.pi, NU + 1)[:, None]
+_v = np.linspace(0, 2 * np.pi, NV + 1)[None, :]
+
+
+def ring(d, cx, cy, R, T, a, m=0.0, spin=0.75, phase=0.4, texts=None):
+    """A polished wedding band, turning. Real 3D: a ring with an oval cross-section, drawn as a fine mesh, each facet
+    coloured by what it reflects. m = 0 gold, 1 silver."""
     if a <= 0:
         return
-    dk, md, hi = metal(m)
-    n = 22
-    for k in range(n):
-        f = k / (n - 1)                                      # 0 outer edge -> 1 inner edge
-        sh = math.sin(math.pi * f) ** 0.7                    # brightest in the middle of the tube
-        col = lerp3(dk, md, sh) if f < 0.62 else lerp3(dk, md, sh * 0.8)
-        r = R + w / 2 - w * f
-        ry = r * tilt + (w * 0.18) * (0.5 - f)
-        d.ellipse([(cx - r) * S, (cy - ry) * S, (cx + r) * S, (cy + ry) * S], outline=rgba(col, a), width=max(1.0, 2.6 * S))
-    r, ry = R + w * 0.12, (R + w * 0.12) * tilt + w * 0.04   # glints sweeping round the ring
-    for k, (sp, ln, al) in enumerate(((0.9, 34, 0.95), (0.9, 14, 0.6))):
-        st = (sp * 70 * T + 180 * k) % 360
-        d.d.arc([(cx - r) * S, (cy - ry) * S, (cx + r) * S, (cy + ry) * S], st, st + ln,
-                aggdraw.Pen(hi, 7 * S, int(255 * al * a)))
-    q = (0.45 * T) % 1.0                                     # a sparkle
-    sx, sy = cx + r * math.cos(6.283 * q * 0.0 - 0.6), cy - ry * 0.9
-    tw = max(0.0, math.sin(math.pi * ((1.1 * T) % 1.0)))
-    for ang in (0, 90):
-        ln = 26 * tw
-        line(d, [(sx - ln * math.cos(math.radians(ang)), sy - ln * math.sin(math.radians(ang))),
-                 (sx + ln * math.cos(math.radians(ang)), sy + ln * math.sin(math.radians(ang)))], rgba(WHITE, 0.9 * tw * a), 3)
+    ra, rb = 0.085 * R, 0.21 * R                              # radial thickness and half-width of the band
+    cu, su, cv, sv = np.cos(_u), np.sin(_u), np.cos(_v), np.sin(_v)
+    rr = R + ra * cv
+    P = np.stack([rr * cu, rb * sv + 0 * cu, rr * su], -1)   # the ring lies flat: its axis is y
+    N = np.stack([cv / ra * cu, sv / rb + 0 * cu, cv / ra * su], -1)
+    N /= np.linalg.norm(N, axis=-1, keepdims=True)
+    tx = math.radians(68 + 6 * math.sin(0.5 * T))            # stand it up, facing us, with a slow nod...
+    ty = phase + 0.55 * math.sin(spin * T) + 0.12 * T        # ...and swing it from side to side
+    cx_, sx_, cy_, sy_ = math.cos(tx), math.sin(tx), math.cos(ty), math.sin(ty)
+    Rx = np.array([[1, 0, 0], [0, cx_, -sx_], [0, sx_, cx_]])
+    Ry = np.array([[cy_, 0, sy_], [0, 1, 0], [-sy_, 0, cy_]])
+    M = Ry @ Rx
+    P = P @ M.T; N = N @ M.T
+    Pc = (P[:-1, :-1] + P[1:, :-1] + P[1:, 1:] + P[:-1, 1:]) / 4
+    Nc = N[:-1, :-1] + N[1:, :-1] + N[1:, 1:] + N[:-1, 1:]
+    Nc /= np.linalg.norm(Nc, axis=-1, keepdims=True)
+    b = studio(Nc[..., 0], Nc[..., 1], Nc[..., 2], rot=0.25 * T)
+    tint = T_GOLD * (1 - m) + T_SILV * m
+    col = metal_rgb(b, tint).astype(int)
+    vis = Nc[..., 2] > 0.0
+    order = np.argsort(Pc[..., 2][vis])                       # far facets first
+    idx = np.argwhere(vis)[order]
+    X = (cx + P[..., 0]) * S; Y = (cy - P[..., 1]) * S
+    al = int(255 * clamp(a))
+    dd = d.d
+    for i, j in idx:
+        c = (int(col[i, j, 0]), int(col[i, j, 1]), int(col[i, j, 2]))
+        dd.polygon([X[i, j], Y[i, j], X[i + 1, j], Y[i + 1, j], X[i + 1, j + 1], Y[i + 1, j + 1], X[i, j + 1], Y[i, j + 1]],
+                   aggdraw.Pen(c, 1.2 * S, al), aggdraw.Brush(c, al))
+    # sparkles on the brightest highlights
+    bb = np.where(vis, b, 0)
+    for k, off in enumerate((0, NU // 3, 2 * NU // 3)):
+        seg = bb[off:off + NU // 3]
+        i, j = np.unravel_index(np.argmax(seg), seg.shape); i += off
+        tw = max(0.0, math.sin(2.1 * T + 2.1 * k)) ** 3 * clamp(bb[i, j] - 0.9, 0, 1)
+        if tw > 0.02:
+            x, y = cx + Pc[i, j, 0], cy - Pc[i, j, 1]
+            for ang, ln in ((0, 60), (90, 60), (45, 22), (135, 22)):
+                dx, dy = ln * tw * math.cos(math.radians(ang)), ln * tw * math.sin(math.radians(ang))
+                line(d, [(x - dx, y - dy), (x + dx, y + dy)], rgba(WHITE, 0.95 * tw * a), 3)
+            circ(d, x, y, 5 * tw, fill=rgba(WHITE, a * tw))
 
 
-def bar(d, x, y, w, h, m_or_cols, a):
-    """A metal bar (ingot face) with a vertical gradient."""
-    dk, md, hi = m_or_cols
-    n = 16
-    for k in range(n):
-        f = k / (n - 1)
-        col = lerp3(hi, md, f / 0.4) if f < 0.4 else lerp3(md, dk, (f - 0.4) / 0.6)
-        rect(d, x, y + h * k / n, x + w, y + h * (k + 1) / n + 0.6, fill=rgba(col, a))
-    rect(d, x, y, x + w, y + h, outline=rgba(WHITE, 0.35 * a), width=2)
+_bn = {}
+
+
+def ball(d, cx, cy, r, T, a, tint, rot=0.0):
+    """A polished metal ball (same studio lighting as the ring)."""
+    if a <= 0.004:
+        return
+    n = int(2 * r * S)
+    if n not in _bn:
+        g = (np.arange(n) + 0.5) / n * 2 - 1
+        x, y = np.meshgrid(g, -g)
+        r2 = x * x + y * y
+        z = np.sqrt(np.clip(1 - r2, 0, 1))
+        edge = np.clip((1 - np.sqrt(r2)) * n / 2, 0, 1)      # antialiased rim
+        _bn[n] = (x, y, z, edge)
+    x, y, z, edge = _bn[n]
+    rgb = metal_rgb(studio(x, y, z, rot=rot + 0.5 * T, strip=0.25), np.asarray(tint, float))
+    im = Image.fromarray(np.dstack([rgb, 255 * edge * a]).astype(np.uint8), "RGBA")
+    d.paste(im, (int(round(cx * S - n / 2)), int(round(cy * S - n / 2))), im.getchannel("A"))
 
 
 # ---------- scenes ----------
-RY = 1060
+RY = 1070
 
 
 def scene_ring(img, d, T, texts):
@@ -286,123 +339,154 @@ def scene_ring(img, d, T, texts):
     if a <= 0:
         return
     tau = T - DUR if end else T
-    m = 0.0 if end else ss((T - 1.6) / 0.7) * (1 - ss((T - 3.6) / 0.7))
-    ring(d, CX, RY, 250, tau, a, m=m)
-    texts.append((label_sprite("without relativity", POP, 40, SILV_M[2]), CX, RY + 230, a * ss((m - 0.5) / 0.3)))
+    m = 0.0 if end else ss((T - 1.5) / 0.8) * (1 - ss((T - 3.5) / 0.8))
+    ring(d, CX, RY, 285, tau, a, m=m)
+    if CAPTIONS:
+        texts.append((label_sprite("without relativity", POP, 42, SILV_C), CX, RY + 400, a * ss((m - 0.5) / 0.3)))
     if end and CAPTIONS:
         qa = a * ss((T - (DUR - 2.4)) / 0.4)
-        texts.append((label_sprite("What else would look different", POP, 44, GOLD), CX, 760, qa))
-        texts.append((label_sprite("without relativity?", POP, 44, GOLD), CX, 820, qa))
-        texts.append((label_sprite("tell us below", size=30, fill=GREY), CX, 1380, qa))
+        texts.append((label_sprite("What else would look different", POP, 44, GOLD), CX, 1440 - 30, qa))
+        texts.append((label_sprite("without relativity?", POP, 44, GOLD), CX, 1440 + 30, qa))
 
 
-METALS = [("aluminium", 1.0), ("iron", 0.92), ("silver", 1.0), ("gold", 0.0), ("platinum", 0.95), ("tin", 1.0)]
+METALS = [("aluminium", (0.90, 0.91, 0.92)), ("iron", (0.60, 0.61, 0.63)), ("silver", (0.96, 0.96, 0.95)),
+          ("gold", tuple(T_GOLD)), ("platinum", (0.84, 0.83, 0.80)), ("tin", (0.83, 0.85, 0.87))]
 
 
 def scene_metals(img, d, T, texts):
     a = win(T, 5.0, 10.0, 0.35, 0.3)
     if a <= 0:
         return
-    for i, (name, m) in enumerate(METALS):
+    for i, (name, tint) in enumerate(METALS):
         col, row = i % 3, i // 3
-        x, y = 105 + col * 275, 760 + row * 330
-        g = ss((T - 5.2 - 0.18 * i) / 0.4)
-        cols = metal(1.0) if m > 0.5 else metal(0.0)
-        if name == "iron":
-            cols = ((62, 64, 72), (122, 125, 134), (190, 193, 200))
-        yy = y + 40 * (1 - g)
-        bar(d, x, yy, 240, 170, cols, a * g)
-        glint = (0.5 * T + 0.17 * i) % 1.0
-        line(d, [(x + 240 * glint, yy + 8), (x + 240 * glint - 50, yy + 160)], rgba(WHITE, 0.25 * a * g), 6)
-        texts.append((label_sprite(name, POP, 36, GOLD if name == "gold" else WHITE), x + 120, yy + 215, a * g))
-    pul = 0.5 + 0.5 * math.sin(5 * T)
-    ga = a * ss((T - 7.6) / 0.5)
-    rect(d, 105 + 275 * 0 - 14, 760 + 330 - 14, 105 + 240 + 14, 760 + 330 + 170 + 14, outline=rgba(GOLD, (0.6 + 0.4 * pul) * ga), width=5)
+        x, y = 200 + col * 300, 850 + row * 360
+        g = ss((T - 5.15 - 0.16 * i) / 0.45)
+        isg = name == "gold"
+        pop = 1 + (0.16 * ss((T - 7.6) / 0.5) if isg else -0.06 * ss((T - 7.6) / 0.5))
+        r = 108 * pop * (0.6 + 0.4 * g)
+        ball(d, x, y, r, T, a * g, tint, rot=0.7 * i)
+        if isg:
+            pul = (0.9 * T) % 1.0
+            circ(d, x, y, r + 14 + 46 * pul, outline=rgba(GOLD, 0.8 * (1 - pul) * a * ss((T - 7.6) / 0.5)), width=3)
+        texts.append((label_sprite(name, POP, 38, GOLD if isg else WHITE), x, y + 160, a * g))
+    texts.append((label_sprite("illustration", size=26, fill=GREY), CX, 1480, a))
+
+
+_ar = np.random.default_rng(4)
+NUC = [(34 * math.sqrt(_ar.uniform(0, 1)), _ar.uniform(0, 6.283), k % 2, _ar.uniform(0, 6.283)) for k in range(52)]
+SHELLS = [(235, 5, 1.9, 0.0), (300, 7, -1.3, 1.0)]           # faint middle shells: radius, electrons, speed, phase
 
 
 def scene_atom(img, d, T, texts):
     a = win(T, 10.0, 23.0, 0.35, 0.35)
     if a <= 0:
         return
-    ay = 1000
-    pr = np.random.default_rng(4)                            # the nucleus: a cluster of protons and neutrons
-    for k in range(46):
-        rr = 34 * math.sqrt(pr.uniform(0, 1)); th = pr.uniform(0, 6.283)
-        col = (255, 110, 95) if k % 2 else (170, 180, 210)
-        circ(d, CX + rr * math.cos(th), ay + rr * math.sin(th), 10, fill=rgba(col, a))
+    ay = 1010
+    zoom = 0.9 + 0.1 * ss((T - 10.0) / 1.5)
     s = ss((T - 17.6) / 2.0)                                 # relativity on: the orbits shrink
-    r1 = 165 * (1 - SHRINK_1S * s)
-    r6 = 360 * (1 - 0.12 * s)                                # outer shell: drawn smaller too (schematic, not to scale)
+    for k in range(5):
+        circ(d, CX, ay, 70 - 8 * k, fill=rgba((255, 150, 110), 0.05 * a))
+    for rr, th, kind, ph in NUC:                             # the nucleus: a jostling cluster of protons and neutrons
+        jx, jy = 2.2 * math.sin(9 * T + ph), 2.2 * math.cos(8 * T + 1.7 * ph)
+        col = (255, 110, 95) if kind else (170, 180, 210)
+        circ(d, CX + rr * math.cos(th) + jx, ay + rr * math.sin(th) + jy, 10, fill=rgba(col, a))
+        circ(d, CX + rr * math.cos(th) + jx - 3, ay + rr * math.sin(th) + jy - 3, 3.5, fill=rgba(WHITE, 0.35 * a))
+    r1 = 150 * zoom * (1 - SHRINK_1S * s)
+    r6 = 385 * zoom * (1 - 0.12 * s)                         # outer shell: drawn smaller too (schematic, not to scale)
     if s > 0:
-        circ(d, CX, ay, 165, outline=rgba(GREY, 0.55 * a * s), width=2)
-        circ(d, CX, ay, 360, outline=rgba(GREY, 0.45 * a * s), width=2)
-    circ(d, CX, ay, r1, outline=rgba(CYAN, 0.8 * a), width=3)
-    circ(d, CX, ay, r6, outline=rgba(GOLD, 0.7 * a), width=3)
-    w1 = 7.5                                                 # angular speed of the inner electron (shown hugely slowed)
-    for k in range(10):                                      # the fast inner electron and its trail
-        th = w1 * T - 0.07 * k
-        circ(d, CX + r1 * math.cos(th), ay + r1 * math.sin(th), 13 - k, fill=rgba(CYAN, a * (1 - k / 10)))
+        for r0 in (150 * zoom, 385 * zoom):                  # ghosts of the orbits without relativity (dashed)
+            for k in range(48):
+                t0 = 6.283 * k / 48
+                line(d, [(CX + r0 * math.cos(t0), ay + r0 * math.sin(t0)), (CX + r0 * math.cos(t0 + 0.07), ay + r0 * math.sin(t0 + 0.07))],
+                     rgba(GREY, 0.6 * a * s), 2.5)
+    for r0, ne, sp, ph in SHELLS:
+        rs = r0 * zoom * (1 - 0.15 * s)
+        circ(d, CX, ay, rs, outline=rgba(GREY, 0.22 * a), width=1.5)
+        for k in range(ne):
+            th = sp * T + ph + 6.283 * k / ne
+            circ(d, CX + rs * math.cos(th), ay + rs * math.sin(th), 5, fill=rgba(GREY, 0.6 * a))
+    circ(d, CX, ay, r1, outline=rgba(CYAN, 0.55 * a), width=2.5)
+    circ(d, CX, ay, r6, outline=rgba(GOLD, 0.55 * a), width=2.5)
+    w1 = 9.0 * (0.25 + 0.75 * ss((T - 11.0) / 1.8))          # the inner electron speeds up as the gauge fills
+    th0 = 9.0 * (T - 10) if T < 11 else 9.0 + 9.0 * (0.25 * (T - 11) + 0.75 * ((T - 11) ** 2 / 3.6 if T < 12.8 else (T - 11) - 0.9))
+    th0 = th0 * 0.9
+    for k in range(26):                                      # ...leaving a comet trail
+        th = th0 - 0.035 * k * (w1 / 9.0 * 2.2)
+        f = 1 - k / 26
+        circ(d, CX + r1 * math.cos(th), ay + r1 * math.sin(th), 3 + 11 * f, fill=rgba(lerp3(BLUE, CYAN, f), a * f ** 1.5))
+    circ(d, CX + r1 * math.cos(th0), ay + r1 * math.sin(th0), 9, fill=rgba(WHITE, a))
     th = -0.8 * T
-    circ(d, CX + r6 * math.cos(th), ay + r6 * math.sin(th), 11, fill=rgba(GOLD, a))
-    la = a * (1 - s)
-    texts.append((label_sprite(f"{Z_GOLD} protons", POP, 36, WHITE), CX, ay - 64, a * ss((T - 10.3) / 0.4)))
-    gy = 1420                                                # speed gauge
+    for k in range(8):
+        f = 1 - k / 8
+        circ(d, CX + r6 * math.cos(th + 0.02 * k), ay + r6 * math.sin(th + 0.02 * k), 4 + 8 * f, fill=rgba(GOLD, a * f))
+    texts.append((label_sprite(f"{Z_GOLD} protons", POP, 34, WHITE), CX, ay - 78, a * ss((T - 10.3) / 0.4)))
+    gy = 1445                                                # speed gauge
     ga = a * ss((T - 11.0) / 0.4) * (1 - s)
     if ga > 0:
         x0, x1 = 140, 860
-        rect(d, x0, gy - 14, x1, gy + 14, outline=rgba(GREY, 0.8 * ga), width=2)
-        f = V_1S * ss((T - 11.2) / 1.6)
-        rect(d, x0 + 3, gy - 11, x0 + 3 + (x1 - x0 - 6) * f, gy + 11, fill=rgba(CYAN, ga))
-        texts.append((label_sprite(f"{100 * f:.0f}% of light speed", POP, 40, CYAN), x0 + (x1 - x0) * V_1S, gy - 52, ga))
-        texts.append((label_sprite("light", size=28, fill=GREY), x1, gy + 40, ga))
+        rect(d, x0, gy - 13, x1, gy + 13, fill=rgba((20, 26, 48), ga), outline=rgba(GREY, 0.8 * ga), width=2)
+        f = V_1S * ss((T - 11.2) / 1.8)
+        for k in range(24):
+            xa, xb = x0 + 3 + (x1 - x0 - 6) * f * k / 24, x0 + 3 + (x1 - x0 - 6) * f * (k + 1) / 24
+            rect(d, xa, gy - 10, xb + 0.5, gy + 10, fill=rgba(lerp3(BLUE, CYAN, k / 23), ga))
+        texts.append((label_sprite(f"{100 * f:.0f}% of light speed", POP, 42, CYAN), min(x0 + (x1 - x0) * V_1S, 700), gy - 54, ga))
     ra = a * s
-    texts.append((label_sprite("without relativity", size=30, fill=GREY), CX + 250, ay - 400, ra))
-    texts.append((label_sprite(f"inner orbit about {100 * SHRINK_1S:.0f}% smaller", POP, 38, CYAN), CX, 1420, ra))
-    texts.append((label_sprite("schematic · not to scale · speed hugely slowed", size=26, fill=GREY), CX, 1480, a))
+    texts.append((label_sprite("without relativity", size=28, fill=GREY), CX + 255, ay - 385 * zoom - 22, ra))
+    texts.append((label_sprite(f"inner orbit about {100 * SHRINK_1S:.0f}% smaller", POP, 40, CYAN), CX, 1432, ra))
+    texts.append((label_sprite("schematic · not to scale · speeds hugely slowed", size=26, fill=GREY), CX, 1492, a))
 
 
-SPEC = [(380, (120, 60, 200)), (440, (60, 80, 255)), (490, (40, 180, 255)), (530, (60, 220, 90)),
-        (580, (250, 230, 60)), (620, (255, 140, 40)), (700, (230, 40, 40))]
-
-
-def spec_col(nm):
-    for (n0, c0), (n1, c1) in zip(SPEC, SPEC[1:]):
-        if nm <= n1:
-            return lerp3(c0, c1, (nm - n0) / (n1 - n0))
-    return SPEC[-1][1]
+RAYCOL = [(140, 70, 230), (70, 90, 255), (40, 170, 255), (60, 220, 90), (250, 230, 60), (255, 150, 40), (240, 50, 50)]
 
 
 def scene_light(img, d, T, texts):
-    """23-36: white light hits gold; the blue part is absorbed, the rest is reflected and looks yellow."""
+    """23-36: white light hits gold; the blue part is absorbed, the rest bounces off and looks yellow."""
     a = win(T, 23.0, 36.0, 0.35, 0.35)
     if a <= 0:
         return
-    bar(d, 160, 1180, 680, 70, metal(0.0), a)               # a gold surface
-    texts.append((label_sprite("gold", POP, 36, (60, 34, 4), stroke=0), CX, 1215, a))
-    ab = ss((T - 25.0) / 1.0)                                # blue gets absorbed
-    for i in range(7):                                       # incoming rays (white light = all colours)
-        nm = 400 + 50 * i
-        col = spec_col(nm)
-        blue = nm < 500
-        x0, x1 = 160 + 40 * i, 420 + 25 * i
-        y0, y1 = 700, 1176
-        ph = ((0.8 * T + i * 0.13) % 1.0)
-        line(d, [(x0, y0), (x1, y1)], rgba(col, 0.75 * a), 5)
-        circ(d, lerp(x0, x1, ph), lerp(y0, y1, ph), 6, fill=rgba(WHITE, 0.8 * a))
-        ra = a * (1 - 0.95 * ab) if blue else a              # reflected rays: blue missing
-        xe = x1 + (x1 - x0) * 0.9
-        line(d, [(x1 + 4, y1), (xe + 60, y0 + 60)], rgba(col, 0.85 * ra), 5)
-        if blue and ab > 0:
-            pul = (1.2 * T + 0.2 * i) % 1.0
-            circ(d, x1, y1 + 10, 10 + 30 * pul, outline=rgba(BLUE, 0.8 * (1 - pul) * a * ab), width=3)
-    texts.append((label_sprite("white light", POP, 36, WHITE), 260, 660, a))
-    texts.append((label_sprite("reflected", POP, 36, WHITE), 760, 720, a))
-    texts.append((label_sprite("blue absorbed", POP, 36, BLUE), 330, 1295, a * ab))
-    ya = a * ss((T - 30.6) / 0.6)                            # what's left, mixed together
-    sw = 1400
-    rect(d, 560, sw - 40, 820, sw + 40, fill=rgba((200, 146, 40), ya), outline=rgba(WHITE, 0.6 * ya), width=2)
-    texts.append((label_sprite("what's left:", POP, 36, WHITE), 380, sw, ya))
-    texts.append((label_sprite("illustration", size=26, fill=GREY), CX, 1480, a))
+    sy = 1210                                                # the gold surface: a polished bar with a moving sheen
+    n = 30
+    for k in range(n):
+        f = k / (n - 1)
+        col = lerp3(GOLD_M[2], GOLD_M[1], f / 0.25) if f < 0.25 else lerp3(GOLD_M[1], GOLD_M[0], (f - 0.25) / 0.75)
+        rect(d, 110, sy + 120 * k / n, 890, sy + 120 * (k + 1) / n + 0.6, fill=rgba(col, a))
+    sh = ((0.22 * T) % 1.4) - 0.2
+    for k in range(12):
+        xs = 110 + 780 * sh + 9 * k
+        if 110 < xs < 880:
+            line(d, [(xs, sy + 2), (xs - 40, sy + 118)], rgba(WHITE, 0.10 * a * (1 - abs(k - 6) / 6)), 9)
+    rect(d, 110, sy, 890, sy + 120, outline=rgba(WHITE, 0.4 * a), width=2)
+    texts.append((label_sprite("gold", POP, 44, (70, 40, 6), stroke=0), CX, sy + 62, a))
+    ab = ss((T - 24.6) / 1.0)                                # from here on the blue photons do not come back
+    hx, hy = CX, sy
+    for i, col in enumerate(RAYCOL):                         # one stream of photons per colour
+        blue = i < 3
+        x_in, y_in = 110 + 62 * i, 690
+        hit = (hx - 135 + 45 * i, hy)
+        x_out, y_out = hit[0] + (hit[0] - x_in), y_in
+        line(d, [(x_in, y_in), hit], rgba(col, 0.22 * a), 3)
+        oa = a * (1 - ab) if blue else a
+        line(d, [hit, (x_out, y_out)], rgba(col, 0.22 * oa), 3)
+        for k in range(5):                                   # photons: short bright dashes running down, then back up
+            q = (0.55 * T + k / 5 + 0.07 * i) % 1.0
+            for leg, alpha in ((0, a), (1, oa)):
+                p0, p1 = ((x_in, y_in), hit) if leg == 0 else (hit, (x_out, y_out))
+                qa, qb = q, min(1.0, q + 0.07)
+                xa, ya = lerp(p0[0], p1[0], qa), lerp(p0[1], p1[1], qa)
+                xb, yb = lerp(p0[0], p1[0], qb), lerp(p0[1], p1[1], qb)
+                line(d, [(xa, ya), (xb, yb)], rgba(col, 0.95 * alpha), 7)
+                circ(d, xb, yb, 5, fill=rgba(WHITE, 0.85 * alpha))
+        if blue and ab > 0:                                  # absorbed: a ripple where each blue photon lands
+            pul = (0.55 * 5 * T + 0.35 * i) % 1.0
+            circ(d, hit[0], hit[1] + 4, 8 + 34 * pul, outline=rgba(col, 0.9 * (1 - pul) * a * ab), width=3)
+            circ(d, hit[0], hit[1] + 4, 9 * (1 - pul), fill=rgba(col, 0.8 * a * ab))
+    texts.append((label_sprite("white light: every colour", POP, 34, WHITE), 300, 648, a))
+    texts.append((label_sprite("reflected", POP, 34, WHITE), 800, 648, a))
+    texts.append((label_sprite("blue: absorbed", POP, 38, BLUE), 250, sy + 160, a * ab))
+    ya = a * ss((T - 30.5) / 0.6)                            # what the reflected colours add up to
+    ball(d, 770, sy + 205, 52, T, ya, tuple(T_GOLD))
+    texts.append((label_sprite("the rest looks:", POP, 36, WHITE), 560, sy + 208, ya))
+    texts.append((label_sprite("illustration", size=26, fill=GREY), CX, 1492, a))
 
 
 def scene_switch(img, d, T, texts):
@@ -411,15 +495,21 @@ def scene_switch(img, d, T, texts):
     if a <= 0:
         return
     m = ss((T - 37.4) / 0.8) * (1 - ss((T - 41.2) / 0.6))
-    ring(d, CX, RY + 40, 230, T, a, m=m)
-    sx, sy = CX, 760                                         # a switch
+    ring(d, CX, RY + 30, 240, T, a, m=m, phase=1.2)
+    for t0 in (37.4, 41.2):                                  # a flash sweeps out when the switch flips
+        dt = T - t0
+        if 0 < dt < 1.2:
+            circ(d, CX, RY + 30, 120 + 520 * dt, outline=rgba(WHITE, 0.55 * math.exp(-dt / 0.35) * a), width=5)
+    sx, sy = CX + 20, 740                                    # the switch
     on = 1 - m
-    rect(d, sx - 90, sy - 34, sx + 90, sy + 34, fill=rgba(lerp3((70, 75, 90), (200, 150, 40), on), a), outline=rgba(WHITE, 0.8 * a), width=3)
-    circ(d, sx + lerp(-56, 56, on), sy, 28, fill=rgba(WHITE, a))
-    texts.append((label_sprite("relativity", POP, 38, WHITE), sx - 230, sy, a))
-    texts.append((label_sprite("ON" if on > 0.5 else "OFF", POP, 40, GOLD if on > 0.5 else SILV_M[1]), sx + 160, sy, a))
-    texts.append((label_sprite("reflects every colour, like silver", POP, 36, SILV_M[2]), CX, 1350, a * ss((m - 0.6) / 0.3)))
-    texts.append((label_sprite("illustration", size=26, fill=GREY), CX, 1480, a))
+    body = lerp3((60, 66, 84), (214, 160, 44), on)
+    for k in range(-52, 53, 4):
+        circ(d, sx + k, sy, 36, fill=rgba(body, a))
+    circ(d, sx + lerp(-52, 52, on), sy, 29, fill=rgba(WHITE, a))
+    texts.append((label_sprite("relativity", POP, 42, WHITE), sx - 250, sy, a))
+    texts.append((label_sprite("ON" if on > 0.5 else "OFF", POP, 44, GOLD if on > 0.5 else SILV_C), sx + 160, sy, a))
+    texts.append((label_sprite("reflects every colour, like silver", POP, 36, SILV_C), CX, 1440, a * ss((m - 0.6) / 0.3)))
+    texts.append((label_sprite("illustration", size=26, fill=GREY), CX, 1492, a))
 
 
 SCENES = (scene_ring, scene_metals, scene_atom, scene_light, scene_switch)
