@@ -254,7 +254,7 @@ def metal_rgb(b, tint):
     return np.clip(255 * (base + hot * (1 - base)), 0, 255)
 
 
-NU, NV = 200, 22
+NU, NV = 720, 64
 _u = np.linspace(0, 2 * np.pi, NU + 1)[:, None]
 _v = np.linspace(0, 2 * np.pi, NV + 1)[None, :]
 
@@ -282,7 +282,10 @@ def ring(d, cx, cy, R, T, a, m=0.0, spin=0.75, phase=0.4, texts=None):
     Nc /= np.linalg.norm(Nc, axis=-1, keepdims=True)
     b = studio(Nc[..., 0], Nc[..., 1], Nc[..., 2], rot=0.25 * T)
     tint = T_GOLD * (1 - m) + T_SILV * m
-    col = metal_rgb(b, tint).astype(int)
+    inner = np.clip(-(cv[:, :-1] + cv[:, 1:]) / 2, 0, 1) * np.ones((NU, 1))   # 1 on the inside of the band
+    b = (0.06 + 1.18 * b) * (1 - 0.34 * inner)                               # the inside sees less of the lights...
+    col = metal_rgb(b, tint)
+    col = (col * (1 - inner[..., None]) + col * tint * inner[..., None]).astype(int)   # ...and mostly reflects the metal itself
     vis = Nc[..., 2] > 0.0
     order = np.argsort(Pc[..., 2][vis])                       # far facets first
     idx = np.argwhere(vis)[order]
@@ -292,7 +295,7 @@ def ring(d, cx, cy, R, T, a, m=0.0, spin=0.75, phase=0.4, texts=None):
     for i, j in idx:
         c = (int(col[i, j, 0]), int(col[i, j, 1]), int(col[i, j, 2]))
         dd.polygon([X[i, j], Y[i, j], X[i + 1, j], Y[i + 1, j], X[i + 1, j + 1], Y[i + 1, j + 1], X[i, j + 1], Y[i, j + 1]],
-                   aggdraw.Pen(c, 1.2 * S, al), aggdraw.Brush(c, al))
+                   aggdraw.Pen(c, 0.8 * S, al), aggdraw.Brush(c, al))
     # sparkles on the brightest highlights
     bb = np.where(vis, b, 0)
     for k, off in enumerate((0, NU // 3, 2 * NU // 3)):
