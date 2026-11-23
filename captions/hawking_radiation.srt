@@ -1,48 +1,68 @@
 1
-00:00:00,350 --> 00:00:02,710
+00:00:00,350 --> 00:00:02,420
 Can empty space make something from nothing?
 
 2
-00:00:04,175 --> 00:00:06,500
-Empty space is never truly empty.
+00:00:03,420 --> 00:00:05,815
+Empty space is never perfectly still.
 
 3
-00:00:06,500 --> 00:00:10,445
-Pairs of particles flicker into being, and vanish again.
+00:00:05,815 --> 00:00:09,180
+Quantum physics says its energy is always jittering.
 
 4
-00:00:11,445 --> 00:00:14,969
-But at the edge of a black hole, one of the pair can fall in,
+00:00:10,180 --> 00:00:12,863
+That jitter lets a particle and its antiparticle
 
 5
-00:00:15,269 --> 00:00:16,655
-while the other escapes.
+00:00:12,863 --> 00:00:15,433
+borrow a little energy and pop into existence,
 
 6
-00:00:17,655 --> 00:00:20,817
-That glow is real: Hawking radiation,
+00:00:15,683 --> 00:00:16,801
+just for an instant.
 
 7
-00:00:20,817 --> 00:00:25,005
-predicted in 1974, but still too faint to detect.
+00:00:16,801 --> 00:00:18,310
+Then they meet, and vanish.
 
 8
-00:00:26,005 --> 00:00:27,177
-But it isn't free.
+00:00:19,310 --> 00:00:21,893
+But at the edge of a black hole, one of them can fall in,
 
 9
-00:00:27,577 --> 00:00:31,875
-Each escaping particle is paid for with the black hole's own mass.
+00:00:22,093 --> 00:00:23,180
+while the other escapes.
 
 10
-00:00:32,875 --> 00:00:38,528
-A black hole as heavy as the Sun would need 10⁶⁷ years to evaporate.
+00:00:24,180 --> 00:00:26,380
+And that escaping glow is real.
 
 11
-00:00:38,828 --> 00:00:42,485
-The universe is just 13.8 billion years old.
+00:00:26,380 --> 00:00:29,857
+It's called Hawking radiation, predicted in 1974,
 
 12
-00:00:43,485 --> 00:00:47,405
-So even at the edge of a black hole, nothing is really free.
+00:00:29,857 --> 00:00:32,270
+though nobody has detected it yet.
+
+13
+00:00:33,270 --> 00:00:34,954
+So who pays back the borrowed energy?
+
+14
+00:00:35,354 --> 00:00:37,130
+The black hole does, with its own mass.
+
+15
+00:00:38,130 --> 00:00:43,090
+A black hole as heavy as the Sun would need 10⁶⁷ years to evaporate.
+
+16
+00:00:43,390 --> 00:00:46,600
+The universe is only 13.8 billion years old.
+
+17
+00:00:47,600 --> 00:00:51,320
+So even at the edge of a black hole, nothing is ever truly free.
 
