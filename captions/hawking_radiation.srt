@@ -1,0 +1,48 @@
+1
+00:00:00,350 --> 00:00:02,710
+Can empty space make something from nothing?
+
+2
+00:00:04,175 --> 00:00:06,500
+Empty space is never truly empty.
+
+3
+00:00:06,500 --> 00:00:10,445
+Pairs of particles flicker into being, and vanish again.
+
+4
+00:00:11,445 --> 00:00:14,969
+But at the edge of a black hole, one of the pair can fall in,
+
+5
+00:00:15,269 --> 00:00:16,655
+while the other escapes.
+
+6
+00:00:17,655 --> 00:00:20,817
+That glow is real: Hawking radiation,
+
+7
+00:00:20,817 --> 00:00:25,005
+predicted in 1974, but still too faint to detect.
+
+8
+00:00:26,005 --> 00:00:27,177
+But it isn't free.
+
+9
+00:00:27,577 --> 00:00:31,875
+Each escaping particle is paid for with the black hole's own mass.
+
+10
+00:00:32,875 --> 00:00:38,528
+A black hole as heavy as the Sun would need 10⁶⁷ years to evaporate.
+
+11
+00:00:38,828 --> 00:00:42,485
+The universe is just 13.8 billion years old.
+
+12
+00:00:43,485 --> 00:00:47,405
+So even at the edge of a black hole, nothing is really free.
+
