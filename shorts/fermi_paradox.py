@@ -117,6 +117,15 @@ def rect(d, x0, y0, x1, y1, fill=None, outline=None, width=1.0):
     d.rectangle([x0 * S, y0 * S, x1 * S, y1 * S], fill=fill, outline=outline, width=max(1.0, width * S))
 
 
+def ell(d, x, y, rx, ry, fill=None, outline=None, width=1.0):
+    d.ellipse([(x - rx) * S, (y - ry) * S, (x + rx) * S, (y + ry) * S], fill=fill, outline=outline, width=max(1.0, width * S))
+
+
+def poly(d, pts, fill):
+    if fill[3] > 0:
+        d.d.polygon([float(v * S) for p in pts for v in p], aggdraw.Brush(tuple(fill[:3]), fill[3]))
+
+
 # ---------- text sprites (drawn at 1x after the glow pass) ----------
 _fonts, _sprites = {}, {}
 
@@ -201,17 +210,31 @@ def put(img, sp, cx, cy, alpha=1.0, top=False):
 
 
 # ---------- pre-rendered assets ----------
+def _haze(rng, cells, blur):
+    n = Image.fromarray((rng.random((H // cells, W // cells)) * 255).astype(np.uint8), "L")
+    n = n.resize((W, H), Image.BICUBIC).filter(ImageFilter.GaussianBlur(blur))
+    v = np.asarray(n, dtype=np.float32) / 255.0
+    return np.clip((v - 0.42) / 0.4, 0, 1)[:, :, None]
+
+
 def make_bg():
     rng = np.random.default_rng(7)
-    y = np.linspace(0, 1, H * S)[:, None, None]
+    y = np.linspace(0, 1, H)[:, None, None]
     col = np.array([9, 13, 32]) * (1 - y) + np.array([2, 3, 10]) * y
-    img = Image.fromarray(np.repeat(col, W * S, axis=1).astype(np.uint8), "RGB")
-    d = ImageDraw.Draw(img)
-    for _ in range(520):
-        x, yy = int(rng.integers(0, W * S)), int(rng.integers(0, H * S))
-        b = int(rng.integers(70, 230)); r = int(rng.choice([1, 1, 1, 2, 2, 3]))
+    col = np.repeat(col, W, axis=1).astype(np.float32)
+    col += _haze(rng, 240, 110) * np.array([11, 6, 21]) + _haze(rng, 200, 100) * np.array([2, 10, 16])   # faint nebula haze
+    xx = (np.arange(W)[None, :, None] - W / 2) / (W / 2); yy = (np.arange(H)[:, None, None] - H / 2) / (H / 2)
+    col *= np.clip(1.08 - 0.22 * (xx ** 2 + yy ** 2), 0, 1)                                              # vignette
+    img = Image.fromarray(np.clip(col, 0, 255).astype(np.uint8), "RGB").resize((W * S, H * S), Image.BICUBIC)
+    d = ImageDraw.Draw(img, "RGBA")
+    for _ in range(900):
+        x, yy_ = int(rng.integers(0, W * S)), int(rng.integers(0, H * S))
+        b = int(rng.integers(60, 230)); r = float(rng.choice([0.5, 0.5, 0.5, 1, 1, 1.5])) * S
         c = [(b, b, b), (int(b * .8), int(b * .9), b), (b, int(b * .9), int(b * .75))][int(rng.integers(0, 3))]
-        d.ellipse([x - r, yy - r, x + r, yy + r], fill=c)
+        if r >= 1.5 * S and b > 170:                       # the few bright ones get a soft halo
+            for k in range(4):
+                rr = r * (5 - k); d.ellipse([x - rr, yy_ - rr, x + rr, yy_ + rr], fill=c + (14,))
+        d.ellipse([x - r, yy_ - r, x + r, yy_ + r], fill=c + (255,))
     return img
 
 
@@ -233,7 +256,7 @@ def lerp3(c0, c1, t):
 
 # ---------- the galaxy: a few thousand stars on two spiral arms plus a bulge, turning (faster near the centre) ----------
 _g = np.random.default_rng(5)
-NS = 3400
+NS = 5200
 _arm = _g.integers(0, 2, NS)
 _r = np.concatenate([np.abs(_g.normal(0, 0.12, 500)), _g.uniform(0.1, 1.0, 800) ** 0.7, _g.uniform(0.12, 1.0, NS - 1300) ** 0.8])
 _th = np.where(np.arange(NS) < 1300, _g.uniform(0, 2 * np.pi, NS),
@@ -248,6 +271,13 @@ COLS = [(200, 215, 255), (255, 214, 150), (235, 235, 245)]
 ORIGIN_I = int(np.argmin(np.abs(_r - 0.7) + 0.4 * np.abs(np.cos(_th + 2.2))))    # where the spreading civilization starts
 
 
+NC = 240                                                # glowing gas clouds along the arms (blue) and star nurseries (pink)
+_cr = _g.uniform(0.18, 0.95, NC)
+_cth = _g.integers(0, 2, NC) * np.pi + 3.1 * np.log(_cr + 0.08) + _g.normal(0, 0.10, NC)
+_cpink = _g.uniform(0, 1, NC) < 0.22
+_csz = _g.uniform(0.035, 0.075, NC)
+
+
 def galaxy_xy(T, cx, cy, size, tilt=0.55, spin=0.05):
     th = STAR_TH + spin * T / (0.25 + STAR_R)
     return cx + size * STAR_R * np.cos(th), cy + size * tilt * STAR_R * np.sin(th)
@@ -258,8 +288,20 @@ def galaxy(d, T, a, cx=CX, cy=GY, size=470, tilt=0.55, tint=None, dim=1.0):
     if a <= 0.004:
         return None
     X, Y = galaxy_xy(T, cx, cy, size, tilt)
-    for k in range(10):                                   # soft glow of the bulge
-        circ(d, cx, cy, size * (0.30 - 0.025 * k), fill=rgba((255, 200, 140), 0.035 * a * dim))
+    for k in range(8):                                    # faint haze of the whole disc
+        f = 1.05 - 0.11 * k
+        ell(d, cx, cy, size * f, size * tilt * f, fill=rgba((90, 110, 210), 0.012 * a * dim))
+    cth = _cth + 0.05 * T / (0.25 + _cr)
+    for i in range(NC):                                   # gas clouds riding the arms
+        x, y = cx + size * _cr[i] * math.cos(cth[i]), cy + size * tilt * _cr[i] * math.sin(cth[i])
+        if _cpink[i]:
+            ell(d, x, y, size * _csz[i] * 0.45, size * _csz[i] * 0.3, fill=rgba((255, 95, 150), 0.07 * a * dim))
+        else:
+            ell(d, x, y, size * _csz[i], size * _csz[i] * 0.62, fill=rgba((80, 120, 255), 0.038 * a * dim))
+    for k in range(12):                                   # soft glow of the bulge, brightest in the core
+        f = 0.32 - 0.025 * k
+        ell(d, cx, cy, size * f, size * f * 0.8, fill=rgba((255, 205, 145), 0.034 * a * dim))
+    ell(d, cx, cy, size * 0.035, size * 0.028, fill=rgba((255, 244, 220), 0.5 * a * dim))
     tw = 0.75 + 0.25 * np.sin(3.0 * T + STAR_PH)
     for i in range(NS):
         al = a * dim * STAR_B[i] * tw[i]
@@ -268,7 +310,7 @@ def galaxy(d, T, a, cx=CX, cy=GY, size=470, tilt=0.55, tint=None, dim=1.0):
             tc, ts = tint(i)
             if ts > 0:
                 c = lerp3(c, tc, ts); al = max(al, a * ts)
-        circ(d, X[i], Y[i], 1.6 + 1.6 * STAR_B[i], fill=rgba(c, al))
+        circ(d, X[i], Y[i], 1.2 + 1.9 * STAR_B[i], fill=rgba(c, al))
     return X, Y
 
 
@@ -378,74 +420,175 @@ def scene_far(img, d, T, texts):
         texts.append((label_sprite("to scale, the bubble is smaller than the dot marking us", size=26, fill=GREY), CX, 1395, sa))
 
 
+OCEAN_TOP, OCEAN_H = 830, 700
+
+
+def make_ocean():
+    """Pre-rendered sea: depth gradient, slanted shafts of light, fading into the dark at the bottom."""
+    h, w = OCEAN_H, W
+    yy = np.linspace(0, 1, h)[:, None]; xx = np.arange(w)[None, :]
+    top, deep = np.array([26, 92, 178], np.float32), np.array([3, 14, 48], np.float32)
+    f = (yy ** 0.75)[:, :, None]
+    col = top * (1 - f) + deep * f
+    col = np.repeat(col, w, axis=1)
+    shaft = np.zeros((h, w), np.float32)
+    for x0, wd, st in ((150, 60, 0.9), (330, 34, 0.6), (520, 80, 1.0), (700, 40, 0.7), (850, 56, 0.8)):
+        shaft += st * np.exp(-((xx - x0 - 0.22 * yy * h) / wd) ** 2)
+    col += (shaft * np.exp(-3.2 * yy) * 26)[:, :, None]
+    alpha = np.clip((1 - yy) / 0.3, 0, 1) * 255 * np.ones((1, w))
+    arr = np.dstack([np.clip(col, 0, 255), alpha]).astype(np.uint8)
+    return Image.fromarray(arr, "RGBA").resize((w * S, h * S), Image.BICUBIC)
+
+
+OCEAN = None
+_prt = np.random.default_rng(11).uniform(0, 1, (60, 3))
+
+
 def scene_looked(img, d, T, texts):
     """30-37: answer 2: everything searched so far vs all there is to search: a hot tub against the oceans."""
+    global OCEAN
     a = win(T, T6, T7 + 0.3, 0.4, 0.4)
     if a <= 0.004:
         return
-    top = 820
-    for k in range(26):                                   # the ocean: layered water, waves on top
-        f = k / 25
-        rect(d, 60, top + 26 * k, 940, top + 26 * (k + 1) + 0.6, fill=rgba(lerp3((40, 120, 210), (6, 24, 70), f), a))
-    pts = [(x, top - 8 + 7 * math.sin(0.025 * x + 2.2 * T) + 4 * math.sin(0.061 * x - 3.1 * T)) for x in range(60, 941, 10)]
-    for k in range(len(pts) - 1):
-        line(d, [pts[k], pts[k + 1]], rgba((170, 220, 255), 0.9 * a), 4)
-    for j in range(1, 9):                                 # slow swells inside the water
-        yj = top + 70 * j
-        pj = [(x, yj + 5 * math.sin(0.018 * x + 1.3 * T + j)) for x in range(70, 931, 20)]
-        line(d, pj, rgba((150, 210, 255), 0.10 * a), 2)
+    if OCEAN is None:
+        OCEAN = make_ocean()
+    top = OCEAN_TOP
+    m = OCEAN.getchannel("A")
+    if a < 0.996:
+        m = m.point(lambda v: int(v * a))
+    d.paste(OCEAN, (0, top * S), m)
+
+    def wave(x, k=0):
+        return top + 9 * math.sin(0.021 * x + 1.9 * T + k) + 5 * math.sin(0.052 * x - 2.6 * T + 2 * k)
+    back = [(x, wave(x, 1.7) - 12) for x in range(0, W + 1, 12)]            # a second swell behind, lighter
+    poly(d, back + [(W, top + 30), (0, top + 30)], rgba((60, 130, 205), 0.55 * a))
+    front = [(x, wave(x)) for x in range(0, W + 1, 12)]
+    poly(d, front + [(W, top + 40), (0, top + 40)], rgba((26, 92, 178), a))
+    line(d, front, rgba((205, 235, 255), 0.95 * a), 4)
+    for j in range(1, 7):                                 # slow swells inside the water
+        yj = top + 85 * j
+        pj = [(x, yj + 6 * math.sin(0.016 * x + 1.1 * T + 1.7 * j)) for x in range(0, W + 1, 24)]
+        line(d, pj, rgba((170, 220, 255), 0.07 * a * (1 - j / 8)), 3)
+    for px, py, ps in _prt:                               # drifting specks and bubbles
+        yy = top + 40 + ((py * 520 - 22 * T * (0.4 + ps)) % 520)
+        fade = clamp((top + 560 - yy) / 300) * clamp((yy - top - 30) / 60)
+        circ(d, 20 + px * 1040 + 8 * math.sin(T + 9 * ps), yy, 1.6 + 2.2 * ps, fill=rgba((200, 235, 255), 0.30 * a * fade))
     tz = ss((T - T6 - 1.5) / 0.6)                         # the hot tub, dropped in for comparison
     tx, ty = 300, 735
     if tz > 0:
-        rect(d, tx - 44, ty - 26, tx + 44, ty + 26, fill=rgba((230, 235, 245), a * tz), outline=rgba(WHITE, a * tz), width=2)
-        rect(d, tx - 36, ty - 18, tx + 36, ty + 4, fill=rgba((80, 170, 240), a * tz))
-        for k in range(3):
-            bx = tx - 24 + 24 * k; by = ty - 20 - ((1.5 * T + 0.3 * k) % 1.0) * 26
-            circ(d, bx, by, 3, outline=rgba(WHITE, 0.7 * a * tz), width=1.5)
+        al = a * tz
+        drop = (1 - tz) * -40
+        ty += drop
+        for k in range(3):                                # steam
+            ph = (0.5 * T + k / 3) % 1.0
+            sx = tx - 26 + 26 * k
+            pts = [(sx + 7 * math.sin(5 * q + 2 * T + k), ty - 30 - 60 * ph - 34 * q) for q in (0, 0.25, 0.5, 0.75, 1)]
+            line(d, pts, rgba((225, 240, 255), 0.45 * al * math.sin(math.pi * ph)), 4)
+        rect(d, tx - 52, ty - 22, tx + 52, ty + 30, fill=rgba((150, 96, 58), al))                 # wooden tub
+        for k in range(1, 8):
+            line(d, [(tx - 52 + 13 * k, ty - 20), (tx - 52 + 13 * k, ty + 30)], rgba((104, 64, 38), 0.9 * al), 1.5)
+        for yy in (ty - 6, ty + 18):
+            rect(d, tx - 54, yy - 3, tx + 54, yy + 3, fill=rgba((70, 76, 92), al))
+        ell(d, tx, ty - 22, 52, 11, fill=rgba((176, 118, 74), al))
+        ell(d, tx, ty - 22, 44, 8, fill=rgba((96, 190, 250), al))
         if CAPTIONS:
-            texts.append((label_sprite("searched so far", POP, 34, WHITE), tx + 210, ty - 4, a * tz))
-            texts.append((label_sprite("all of Earth's oceans: everything there is to search", POP, 32, WHITE), CX, 1430, a * tz))
-            texts.append((label_sprite("not to scale · estimate from 2018", size=26, fill=GREY), CX, 1480, a * tz))
+            texts.append((label_sprite("searched so far: one hot tub", POP, 34, WHITE), tx + 330, ty - 4, al))
+            texts.append((label_sprite("all of Earth's oceans: everything there is to search", POP, 32, WHITE), CX, 1430, al))
+            texts.append((label_sprite("not to scale · estimate from 2018", size=26, fill=GREY), CX, 1480, al))
 
 
 STEPS = ["life", "complex life", "intelligence", "technology", "the stars"]
 
 
+def step_icon(d, k, x, y, al):
+    """Tiny pictures inside the step circles: a cell, many cells, a bright idea, a radio mast, a star."""
+    if k == 0:
+        circ(d, x, y, 15, outline=rgba(CYAN, al), width=3); circ(d, x + 3, y - 2, 5, fill=rgba(CYAN, al))
+    elif k == 1:
+        for dx, dy in ((-9, -7), (9, -7), (0, 8), (-14, 9), (14, 9)):
+            circ(d, x + dx, y + dy, 7, outline=rgba(CYAN, al), width=2.5)
+    elif k == 2:
+        circ(d, x, y - 5, 12, fill=rgba(GOLD, al))
+        rect(d, x - 5, y + 7, x + 5, y + 16, fill=rgba(WHITE, al))
+        for ang in (-2.5, -1.57, -0.64):
+            line(d, [(x + 17 * math.cos(ang), y - 5 + 17 * math.sin(ang)), (x + 23 * math.cos(ang), y - 5 + 23 * math.sin(ang))], rgba(GOLD, al), 2.5)
+    elif k == 3:
+        line(d, [(x - 10, y + 17), (x, y - 8), (x + 10, y + 17)], rgba(CYAN, al), 3)
+        line(d, [(x - 6, y + 7), (x + 6, y + 7)], rgba(CYAN, al), 2.5)
+        circ(d, x, y - 10, 4, fill=rgba(WHITE, al))
+        for r in (10, 17):
+            for sgn in (-1, 1):
+                pts = [(x + sgn * r * math.cos(q), y - 10 + r * math.sin(q)) for q in (-0.7, -0.35, 0, 0.35, 0.7)]
+                line(d, pts, rgba(WHITE, 0.8 * al), 2)
+    else:
+        pts = []
+        for j in range(8):
+            r = 19 if j % 2 == 0 else 6.5
+            pts.append((x + r * math.sin(j * math.pi / 4), y - r * math.cos(j * math.pi / 4)))
+        poly(d, pts, rgba(GOLD, al))
+
+
 def scene_filter(img, d, T, texts):
-    """37-45: answer 3: the Great Filter. A path of steps; a wall somewhere on it; we don't know where."""
+    """37-45: answer 3: the Great Filter. A road of steps; a wall on it that stops almost everyone; behind us or ahead?"""
     a = win(T, T7, T8 + 0.3, 0.4, 0.5)
     if a <= 0.004:
         return
     y0 = 1150
     xs = [120 + 190 * k for k in range(5)]
-    for k in range(4):
-        line(d, [(xs[k] + 36, y0), (xs[k + 1] - 36, y0)], rgba(GREY, 0.6 * a), 4)
+    t = T - T7
+    line(d, [(xs[0], y0), (xs[4], y0)], rgba(GREY, 0.45 * a), 4)
+    fa = a * ss((t - 1.8) / 0.5)
+    u = ss((t - 5.35) / 0.55)                             # 0 -> behind us, 1 -> ahead of us
+    fx = lerp((xs[1] + xs[2]) / 2, (xs[3] + xs[4]) / 2, u)
+    # other worlds setting out along the road: almost all of them end at the wall
+    ta = a * ss((t - 0.9) / 0.5)
+    for k in range(16):
+        x = xs[0] + ((t * 105 + k * 61) % 800)
+        lim = fx if fa > 0.3 else xs[4] + 40
+        if x > lim:
+            continue
+        near = clamp((lim - x) / 46) if fa > 0.3 else 1.0
+        c = lerp3((255, 90, 90), CYAN, near)
+        yb = y0 + 5 * math.sin(0.05 * x + k)
+        circ(d, x, yb, 5.5 + 5 * (1 - near), fill=rgba(c, ta * (0.35 + 0.55 * near)))
+        circ(d, x - 13, yb, 3.5, fill=rgba(c, 0.35 * ta * near))
     for k, (x, name) in enumerate(zip(xs, STEPS)):
-        sa = a * ss((T - T7 - 0.2 - 0.25 * k) / 0.35)
-        circ(d, x, y0, 32, fill=rgba((20, 26, 48), sa), outline=rgba(CYAN if k < 4 else GOLD, sa), width=4)
+        sa = a * ss((t - 0.2 - 0.25 * k) / 0.35)
+        col = CYAN if k < 4 else GOLD
+        circ(d, x, y0, 46, fill=rgba(col, 0.10 * sa))
+        circ(d, x, y0, 38, fill=rgba((14, 20, 42), sa), outline=rgba(col, sa), width=4)
+        step_icon(d, k, x, y0, sa)
         if CAPTIONS:
-            texts.append((label_sprite(name, POP, 32, WHITE), x, y0 + 66 + (34 if k % 2 else 0), sa))
-    # "we are here", walking from life to technology
-    wp = ss((T - T7 - 1.0) / 2.0) * 3
-    wx = lerp(xs[int(min(wp, 2.999))], xs[int(min(wp, 2.999)) + 1], wp - int(min(wp, 2.999)))
-    circ(d, wx, y0, 16, fill=rgba(GOLD, a))
+            texts.append((label_sprite(name, POP, 32, WHITE), x, y0 + 74 + (36 if k % 2 else 0), sa))
+    # "we are here": a gold ring walking from life to technology
+    wp = ss((t - 1.0) / 2.0) * 3
+    wi = int(min(wp, 2.999))
+    wx = lerp(xs[wi], xs[wi + 1], wp - wi)
+    pulse = 0.5 + 0.5 * math.sin(4 * T)
+    circ(d, wx, y0, 47 + 3 * pulse, outline=rgba(GOLD, a), width=5)
+    circ(d, wx, y0, 56 + 5 * pulse, outline=rgba(GOLD, 0.35 * a), width=2)
     if CAPTIONS:
-        texts.append((label_sprite("we are here", POP, 32, GOLD), wx, y0 - 62, a * ss((T - T7 - 1.0) / 0.4)))
-    # the filter: a glowing wall that slides between "behind us" and "ahead of us"
-    fa = a * ss((T - T7 - 1.8) / 0.5)
+        texts.append((label_sprite("we are here", POP, 32, GOLD), wx - 34, y0 - 86, a * ss((t - 1.0) / 0.4)))
+    # the filter: a glowing wall across the road
     if fa > 0.004:
-        u = ss((T - T7 - 5.35) / 0.55)                                # 0 -> behind us, 1 -> ahead of us
-        fx = lerp((xs[1] + xs[2]) / 2, (xs[3] + xs[4]) / 2, u)
-        for k in range(10):
-            rect(d, fx - 14 + 2.8 * k, 860, fx - 11 + 2.8 * k, 1110, fill=rgba((255, 90, 90), 0.08 * fa))
-        rect(d, fx - 5, 860, fx + 5, 1110, fill=rgba((255, 110, 110), 0.95 * fa))
+        yt, yb = 870, y0 + 48
+        for k in range(14):
+            wdt = 44 - 3 * k
+            rect(d, fx - wdt, yt, fx + wdt, yb, fill=rgba((255, 70, 80), 0.022 * fa))
+        flick = 0.85 + 0.15 * math.sin(11 * T)
+        rect(d, fx - 6, yt, fx + 6, yb, fill=rgba((255, 120, 120), 0.95 * fa * flick))
+        rect(d, fx - 2, yt, fx + 2, yb, fill=rgba((255, 225, 225), fa))
+        for k in range(9):                                # sparks climbing the wall
+            ph = (0.7 * T + k / 9) % 1.0
+            circ(d, fx + 16 * math.sin(7 * k + 3 * T), yb - (yb - yt) * ph, 3, fill=rgba((255, 170, 170), 0.8 * fa * math.sin(math.pi * ph)))
         if CAPTIONS:
-            texts.append((label_sprite("the Great Filter", POP, 42, (255, 120, 120)), fx, 815, fa))
-            ba = fa * ss((T - T7 - 3.95) / 0.3) * (1 - ss((T - T7 - 5.3) / 0.25))
-            aa = fa * ss((T - T7 - 5.75) / 0.3)
+            texts.append((label_sprite("the Great Filter", POP, 42, (255, 120, 120)), fx, 825, fa))
+            ba = fa * ss((t - 3.95) / 0.3) * (1 - ss((t - 5.3) / 0.25))
+            aa = fa * ss((t - 5.75) / 0.3)
             texts.append((label_sprite("behind us? then we are rare", POP, 38, WHITE), CX, 1410, ba))
             texts.append((label_sprite("ahead of us? then it is waiting", POP, 38, (255, 150, 150)), CX, 1410, aa))
             texts.append((label_sprite("an idea, not a measurement", size=26, fill=GREY), CX, 1465, fa))
+
 
 SCENES = (scene_galaxy, scene_spread, scene_silent, scene_far, scene_looked, scene_filter)
 
