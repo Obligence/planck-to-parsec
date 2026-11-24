@@ -34,7 +34,7 @@ CAPTIONS = [  # start, end, kicker, text (*...* = highlighted, | = line break)
     (16.7, 22.4, "FERMI, 1950", "So where are they? | *The Fermi paradox.*"),
     (22.4, 29.7, "ANSWER 1", "We're | *too far apart.*"),
     (29.7, 37.3, "ANSWER 2", "We've | *barely looked.*"),
-    (37.3, 44.5, "ANSWER 3", "*The Great Filter.*"),
+    (37.3, 44.5, "ANSWER 3", "The Great Filter: | *one step almost | nobody passes.*"),
     (44.5, 48.6, None, "The question | *stays open.*"),
 ]
 
@@ -434,16 +434,18 @@ def scene_filter(img, d, T, texts):
     # the filter: a glowing wall that slides between "behind us" and "ahead of us"
     fa = a * ss((T - T7 - 1.8) / 0.5)
     if fa > 0.004:
-        u = 0.5 + 0.5 * math.sin(1.1 * (T - T7 - 1.8) - 1.57)       # 0 -> behind, 1 -> ahead
+        u = ss((T - T7 - 5.35) / 0.55)                                # 0 -> behind us, 1 -> ahead of us
         fx = lerp((xs[1] + xs[2]) / 2, (xs[3] + xs[4]) / 2, u)
         for k in range(10):
             rect(d, fx - 14 + 2.8 * k, 860, fx - 11 + 2.8 * k, 1110, fill=rgba((255, 90, 90), 0.08 * fa))
         rect(d, fx - 5, 860, fx + 5, 1110, fill=rgba((255, 110, 110), 0.95 * fa))
         if CAPTIONS:
             texts.append((label_sprite("the Great Filter", POP, 42, (255, 120, 120)), fx, 815, fa))
-            texts.append((label_sprite("behind us, or ahead of us?", POP, 36, WHITE), CX, 1410, fa))
-            texts.append((label_sprite("an idea, not a measurement", size=26, fill=GREY), CX, 1460, fa))
-
+            ba = fa * ss((T - T7 - 3.95) / 0.3) * (1 - ss((T - T7 - 5.3) / 0.25))
+            aa = fa * ss((T - T7 - 5.75) / 0.3)
+            texts.append((label_sprite("behind us? then we are rare", POP, 38, WHITE), CX, 1410, ba))
+            texts.append((label_sprite("ahead of us? then it is waiting", POP, 38, (255, 150, 150)), CX, 1410, aa))
+            texts.append((label_sprite("an idea, not a measurement", size=26, fill=GREY), CX, 1465, fa))
 
 SCENES = (scene_galaxy, scene_spread, scene_silent, scene_far, scene_looked, scene_filter)
 
