@@ -1,0 +1,72 @@
+1
+00:00:00,350 --> 00:00:01,293
+Where is everybody?
+
+2
+00:00:01,593 --> 00:00:03,380
+Our galaxy should be full of aliens.
+
+3
+00:00:04,380 --> 00:00:07,598
+It has hundreds of billions of stars, most with planets,
+
+4
+00:00:07,598 --> 00:00:09,610
+and it's over 10 billion years old.
+
+5
+00:00:10,610 --> 00:00:13,380
+Even at 1% of light speed, a civilization
+
+6
+00:00:13,380 --> 00:00:16,150
+could cross it in about 10 million years.
+
+7
+00:00:17,150 --> 00:00:18,618
+So why has no one shown up?
+
+8
+00:00:18,618 --> 00:00:19,978
+That's the Fermi paradox.
+
+9
+00:00:20,278 --> 00:00:21,800
+Here are the 3 best answers.
+
+10
+00:00:22,800 --> 00:00:24,339
+1: we're too far apart.
+
+11
+00:00:24,339 --> 00:00:29,090
+Our radio signals have only filled a bubble about 200 light-years wide.
+
+12
+00:00:30,090 --> 00:00:31,500
+2: we've barely looked.
+
+13
+00:00:31,500 --> 00:00:35,116
+Our searches so far are like checking one hot tub of water,
+
+14
+00:00:35,116 --> 00:00:36,710
+out of all Earth's oceans.
+
+15
+00:00:37,710 --> 00:00:38,820
+3: the Great Filter.
+
+16
+00:00:38,820 --> 00:00:41,874
+Some step on the way to the stars is almost impossible,
+
+17
+00:00:42,174 --> 00:00:43,950
+and it may still be ahead of us.
+
+18
+00:00:44,950 --> 00:00:48,040
+Until we know which one is true, the question stays open.
+
