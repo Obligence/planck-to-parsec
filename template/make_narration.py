@@ -43,6 +43,8 @@ for i, t in enumerate(lines):
     parts = re.split(r"\s*\[(\d*\.?\d+)\]\s*", t); segs = []
     for j in range(0, len(parts), 2):
         ph = parts[j].strip(); heavy = ph.startswith("~"); ph = ph.lstrip("~ ")
+        if not ph:   # a stop at the very end of a line ("...came from. [0.6]") just leaves its silence
+            continue
         x, sr = k.create(ph, voice=voice, speed=speed * mult * (0.97 if heavy else 1.0), lang="en-gb" if voice.startswith("b") else "en-us")
         idx = np.where(np.abs(x) > 0.01)[0]; x = x[max(0, idx[0] - 800): idx[-1] + 2400]
         if ph.endswith("?"):
