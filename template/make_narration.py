@@ -3,7 +3,7 @@
 kokoro-onnx GitHub release model-files-v1.0: kokoro-v1.0.onnx and voices-v1.0.bin).
 Usage: python3 make_narration.py <lines.json> <voice> <speed> <outdir> <model_dir>
 lines.json is a list, one entry per caption: "text", ["text", speed_multiplier] or
-{"say": spoken text, "show": subtitle text, "speed": multiplier}.
+{"say": spoken text, "show": subtitle text, "speed": multiplier, "close": false to skip the closing cadence}.
 A line may hold stops such as "A question? [0.7] ~Nobody knows. [0.5] And on." (see the comment below).
 The last line gets a gentle falling, slowing ending so the video closes on a settled tone.
 Writes line_NN.wav and durs.json."""
@@ -34,8 +34,9 @@ def question_rise(x, sr, text):
 
 durs = []
 for i, t in enumerate(lines):
+    close = True
     if isinstance(t, dict):
-        t, mult = t["say"], float(t.get("speed", 1.0))
+        close = bool(t.get("close", True)); t, mult = t["say"], float(t.get("speed", 1.0))
     else:
         t, mult = (t, 1.0) if isinstance(t, str) else (t[0], float(t[1]))
     # "[0.6]" inside a line = a deliberate stop of that many seconds; the phrase after it is spoken on its own,
@@ -55,7 +56,7 @@ for i, t in enumerate(lines):
             x = np.concatenate([x, np.zeros(max(0, int((float(parts[j + 1]) - 0.13) * sr)))])
         segs.append(x)
     s = np.concatenate(segs)
-    if i == len(lines) - 1:   # closing cadence: pitch and pace glide down over the final 1.4 s
+    if i == len(lines) - 1 and close:   # closing cadence ("close": false in the entry leaves the voice untouched): pitch and pace glide down over the final 1.4 s
         n = min(len(s), int(1.4 * sr)); tail = s[-n:]
         rate = np.linspace(1.0, 0.90, int(n / 0.95)); pos = np.cumsum(rate); pos = pos[pos < n - 1]
         s = np.concatenate([s[:-n], np.interp(pos, np.arange(n), tail)])
